@@ -118,6 +118,15 @@ module.exports = {
         'calculateTableGeometry': 'readonly',
         'calculateAdjacencyMap': 'readonly',
         'areSeatsAdjacent': 'readonly',
-        'getCornerSeatConnections': 'readonly'
+        'getCornerSeatConnections': 'readonly',
+        
+        // Constraint validator functions
+        'validateAllConstraints': 'readonly',
+        'checkFixedAssignmentConflicts': 'readonly',
+        'checkAdjacencyChainPossibility': 'readonly',
+        'findConstraintGroups': 'readonly',
+        
+        // Adjacency constraint manager
+        'AdjacencyConstraintManager': 'readonly'
     }
 };

@@ -9,7 +9,7 @@ let currentTableConfig = null;
 // eslint-disable-next-line no-unused-vars
 let currentGuestList = [];
 // eslint-disable-next-line no-unused-vars
-let currentConstraints = [];
+let adjacencyConstraintManager = null;
 // eslint-disable-next-line no-unused-vars
 let currentSeatingArrangement = null;
 // eslint-disable-next-line no-unused-vars
@@ -34,6 +34,10 @@ function initializeApp() {
     // Initialize fixed assignment manager as required by Prompt 7
     // eslint-disable-next-line no-undef
     fixedAssignmentManager = new FixedAssignmentManager();
+    
+    // Initialize adjacency constraint manager as required by Prompt 10
+    // eslint-disable-next-line no-undef
+    adjacencyConstraintManager = new AdjacencyConstraintManager();
     
     // Test models with sample data as required by Prompt 2
     testModels();
@@ -81,7 +85,8 @@ function testModels() {
         
         const adjacencyConstraint = createAdjacencyConstraint('Bob', 'Charlie');
         console.log('Adjacency constraint created:', adjacencyConstraint);
-        currentConstraints = [adjacencyConstraint];
+        // Test adjacency constraint manager
+        adjacencyConstraintManager.addConstraint('Bob', 'Charlie');
         
         // Test seating arrangement
         const arrangement = createSeatingArrangement();
@@ -566,8 +571,8 @@ function initializeConstraintsUI() {
         return;
     }
     
-    // Initialize empty constraints list
-    currentConstraints = [];
+    // Clear any existing constraints
+    adjacencyConstraintManager.clearAllConstraints();
     
     // Set up event listeners
     guestSelectA.addEventListener('change', validateAndUpdateConstraintForm);
@@ -596,8 +601,9 @@ function updateConstraintUI() {
     // Render constraints list
     const constraintsContainer = document.getElementById('constraints-list-container');
     if (constraintsContainer) {
+        const constraints = adjacencyConstraintManager.getAllConstraints();
         // eslint-disable-next-line no-undef
-        renderConstraintsList(currentConstraints, constraintsContainer);
+        renderConstraintsList(constraints, constraintsContainer);
     }
     
     // Validate form state
@@ -617,8 +623,9 @@ function validateAndUpdateConstraintForm() {
     const guestB = guestSelectB.value;
     
     // Validate selection
+    const constraints = adjacencyConstraintManager.getAllConstraints();
     // eslint-disable-next-line no-undef
-    const validation = validateConstraintSelection(guestA, guestB, currentConstraints);
+    const validation = validateConstraintSelection(guestA, guestB, constraints);
     
     // Update button state
     // eslint-disable-next-line no-undef
@@ -644,20 +651,28 @@ function handleAddConstraint() {
     const guestB = guestSelectB.value;
     
     // Validate one more time
+    const constraints = adjacencyConstraintManager.getAllConstraints();
     // eslint-disable-next-line no-undef
-    const validation = validateConstraintSelection(guestA, guestB, currentConstraints);
+    const validation = validateConstraintSelection(guestA, guestB, constraints);
     
     if (!validation.isValid) {
         console.error('Cannot add constraint:', validation.errors);
         return;
     }
     
-    // Create constraint object
+    // Add constraint using manager
     try {
-        const constraint = createAdjacencyConstraint(guestA, guestB);
-        currentConstraints.push(constraint);
+        const result = adjacencyConstraintManager.addConstraint(guestA, guestB);
         
-        console.log('Added constraint:', constraint);
+        if (!result.success) {
+            console.error('Failed to add constraint:', result.error);
+            const constraintsSection = document.querySelector('.adjacency-constraints-section');
+            // eslint-disable-next-line no-undef
+            showConstraintValidationError(result.error, constraintsSection);
+            return;
+        }
+        
+        console.log('Added constraint:', result.constraint);
         
         // Clear form
         // eslint-disable-next-line no-undef
@@ -666,8 +681,11 @@ function handleAddConstraint() {
         // Update UI
         updateConstraintUI();
         
+        // Run constraint validation and show warnings/errors
+        runConstraintValidation();
+        
     } catch (error) {
-        console.error('Error creating constraint:', error);
+        console.error('Error adding constraint:', error);
         const constraintsSection = document.querySelector('.adjacency-constraints-section');
         // eslint-disable-next-line no-undef
         showConstraintValidationError('Error adding constraint', constraintsSection);
@@ -682,18 +700,20 @@ function handleDeleteConstraint(event) {
     
     const constraintIndex = parseInt(event.target.getAttribute('data-constraint-index'));
     
-    if (isNaN(constraintIndex) || constraintIndex < 0 || constraintIndex >= currentConstraints.length) {
-        console.error('Invalid constraint index for deletion:', constraintIndex);
+    const result = adjacencyConstraintManager.removeConstraint(constraintIndex);
+    
+    if (!result.success) {
+        console.error('Failed to remove constraint:', result.error);
         return;
     }
     
-    const removedConstraint = currentConstraints[constraintIndex];
-    currentConstraints.splice(constraintIndex, 1);
-    
-    console.log('Removed constraint:', removedConstraint);
+    console.log('Removed constraint:', result.removedConstraint);
     
     // Update UI
     updateConstraintUI();
+    
+    // Run constraint validation after removal
+    runConstraintValidation();
 }
 
 // Adjacency Map Management
@@ -724,6 +744,124 @@ function calculateAndStoreAdjacencyMap() {
     } catch (error) {
         console.error('Error calculating adjacency map:', error);
         currentAdjacencyMap = null;
+    }
+}
+
+// Constraint Validation Integration
+
+function runConstraintValidation() {
+    if (!currentTableConfig || !currentAdjacencyMap || !adjacencyConstraintManager) {
+        return;
+    }
+    
+    try {
+        const fixedAssignments = fixedAssignmentManager.getAllAssignments();
+        const adjacencyConstraints = adjacencyConstraintManager.getAllConstraints();
+        
+        // eslint-disable-next-line no-undef
+        const validationResult = validateAllConstraints(
+            currentGuestList,
+            currentTableConfig,
+            fixedAssignments,
+            adjacencyConstraints,
+            currentAdjacencyMap
+        );
+        
+        console.log('Constraint validation result:', validationResult);
+        
+        // Display validation results to user
+        displayValidationResults(validationResult);
+        
+    } catch (error) {
+        console.error('Error running constraint validation:', error);
+    }
+}
+
+function displayValidationResults(validationResult) {
+    // Clear any existing validation messages
+    clearValidationMessages();
+    
+    if (!validationResult.isValid && validationResult.errors.length > 0) {
+        showConstraintValidationErrors(validationResult.errors);
+    }
+    
+    if (validationResult.warnings.length > 0) {
+        showValidationWarnings(validationResult.warnings);
+    }
+    
+    // Update generate button state based on validation
+    updateGenerateButtonState(validationResult.isValid);
+}
+
+function showConstraintValidationErrors(errors) {
+    const constraintsSection = document.querySelector('.adjacency-constraints-section');
+    if (!constraintsSection) return;
+    
+    // Create or update error container
+    let errorContainer = constraintsSection.querySelector('.constraint-validation-errors');
+    if (!errorContainer) {
+        errorContainer = document.createElement('div');
+        errorContainer.className = 'constraint-validation-errors';
+        constraintsSection.appendChild(errorContainer);
+    }
+    
+    errorContainer.innerHTML = '';
+    errors.forEach(error => {
+        const errorElement = document.createElement('div');
+        errorElement.className = 'constraint-error-item';
+        errorElement.textContent = error;
+        errorContainer.appendChild(errorElement);
+    });
+}
+
+function showValidationWarnings(warnings) {
+    const constraintsSection = document.querySelector('.adjacency-constraints-section');
+    if (!constraintsSection) return;
+    
+    // Create or update warning container
+    let warningContainer = constraintsSection.querySelector('.constraint-validation-warnings');
+    if (!warningContainer) {
+        warningContainer = document.createElement('div');
+        warningContainer.className = 'constraint-validation-warnings';
+        constraintsSection.appendChild(warningContainer);
+    }
+    
+    warningContainer.innerHTML = '';
+    warnings.forEach(warning => {
+        const warningElement = document.createElement('div');
+        warningElement.className = 'constraint-warning-item';
+        warningElement.textContent = warning;
+        warningContainer.appendChild(warningElement);
+    });
+}
+
+function clearValidationMessages() {
+    const constraintsSection = document.querySelector('.adjacency-constraints-section');
+    if (!constraintsSection) return;
+    
+    const errorContainer = constraintsSection.querySelector('.constraint-validation-errors');
+    const warningContainer = constraintsSection.querySelector('.constraint-validation-warnings');
+    
+    if (errorContainer) {
+        errorContainer.remove();
+    }
+    if (warningContainer) {
+        warningContainer.remove();
+    }
+}
+
+function updateGenerateButtonState(isValid) {
+    const generateBtn = document.querySelector('.generate-btn');
+    if (!generateBtn) return;
+    
+    if (isValid) {
+        generateBtn.disabled = false;
+        generateBtn.classList.remove('disabled');
+        generateBtn.title = 'Generate seating arrangement';
+    } else {
+        generateBtn.disabled = true;
+        generateBtn.classList.add('disabled');
+        generateBtn.title = 'Cannot generate: constraint conflicts detected';
     }
 }
 

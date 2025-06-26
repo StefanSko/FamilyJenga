@@ -230,6 +230,120 @@ class FixedAssignmentManager {
     }
 }
 
+// Adjacency Constraint Manager Class
+class AdjacencyConstraintManager {
+    constructor() {
+        this.constraints = []; // Array of {guestA, guestB} objects
+    }
+    
+    addConstraint(guestA, guestB) {
+        // Validate inputs
+        if (!guestA || typeof guestA !== 'string' || guestA.trim() === '') {
+            return {
+                success: false,
+                error: 'First guest name must be a non-empty string'
+            };
+        }
+        
+        if (!guestB || typeof guestB !== 'string' || guestB.trim() === '') {
+            return {
+                success: false,
+                error: 'Second guest name must be a non-empty string'
+            };
+        }
+        
+        if (guestA.toLowerCase() === guestB.toLowerCase()) {
+            return {
+                success: false,
+                error: 'Guests must be different for adjacency constraint'
+            };
+        }
+        
+        // Check if constraint already exists (in either direction)
+        if (this.hasConstraint(guestA, guestB)) {
+            return {
+                success: false,
+                error: `Constraint between ${guestA} and ${guestB} already exists`
+            };
+        }
+        
+        // Add constraint
+        const constraint = { guestA, guestB };
+        this.constraints.push(constraint);
+        
+        return {
+            success: true,
+            constraint: constraint,
+            index: this.constraints.length - 1
+        };
+    }
+    
+    removeConstraint(index) {
+        // Validate index
+        if (typeof index !== 'number' || index < 0 || index >= this.constraints.length) {
+            return {
+                success: false,
+                error: `Invalid constraint index: ${index}`
+            };
+        }
+        
+        // Remove constraint
+        const removedConstraint = this.constraints.splice(index, 1)[0];
+        
+        return {
+            success: true,
+            removedConstraint: removedConstraint
+        };
+    }
+    
+    getAllConstraints() {
+        // Return copy to prevent external modification
+        return [...this.constraints];
+    }
+    
+    hasConstraint(guestA, guestB) {
+        // Check if constraint exists in either direction
+        return this.constraints.some(constraint => 
+            (constraint.guestA.toLowerCase() === guestA.toLowerCase() && 
+             constraint.guestB.toLowerCase() === guestB.toLowerCase()) ||
+            (constraint.guestA.toLowerCase() === guestB.toLowerCase() && 
+             constraint.guestB.toLowerCase() === guestA.toLowerCase())
+        );
+    }
+    
+    // Get all constraints involving a specific guest
+    getConstraintsForGuest(guestName) {
+        if (!guestName) {
+            return [];
+        }
+        
+        return this.constraints.filter(constraint =>
+            constraint.guestA.toLowerCase() === guestName.toLowerCase() ||
+            constraint.guestB.toLowerCase() === guestName.toLowerCase()
+        );
+    }
+    
+    // Clear all constraints (utility method)
+    clearAllConstraints() {
+        this.constraints = [];
+    }
+    
+    // Get count of constraints (utility method)
+    getConstraintCount() {
+        return this.constraints.length;
+    }
+    
+    // Get list of all guests involved in constraints
+    getAllConstrainedGuests() {
+        const guests = new Set();
+        for (const constraint of this.constraints) {
+            guests.add(constraint.guestA);
+            guests.add(constraint.guestB);
+        }
+        return Array.from(guests);
+    }
+}
+
 // Export functions for Node.js environment if available
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -240,6 +354,7 @@ if (typeof module !== 'undefined' && module.exports) {
         createFixedAssignment,
         createAdjacencyConstraint,
         createSeatingArrangement,
-        FixedAssignmentManager
+        FixedAssignmentManager,
+        AdjacencyConstraintManager
     };
 }
