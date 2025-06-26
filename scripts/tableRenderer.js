@@ -424,7 +424,7 @@ function calculateLabelPosition(cx, cy, seatSide, totalSeats) {
     
     // Increase offset for top/bottom seats since they'll be rotated and need more clearance
     if (seatSide === 'top' || seatSide === 'bottom') {
-        offset += 10; // Extra clearance for rotated labels
+        offset += 15; // Extra clearance for rotated labels
     }
     
     let x, y, anchor, baseline;
