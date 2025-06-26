@@ -1,0 +1,131 @@
+// ABOUTME: Node.js test runner for basic validation of our application structure
+// ABOUTME: Runs file existence and basic structure tests without requiring a browser
+
+const fs = require('fs');
+const path = require('path');
+
+class TestRunner {
+    constructor() {
+        this.tests = [];
+        this.results = [];
+    }
+
+    test(name, fn) {
+        this.tests.push({ name, fn });
+    }
+
+    assertTrue(condition, message = '') {
+        if (!condition) {
+            throw new Error(`Expected true, got false. ${message}`);
+        }
+    }
+
+    assertEquals(actual, expected, message = '') {
+        if (actual !== expected) {
+            throw new Error(`Expected ${expected}, got ${actual}. ${message}`);
+        }
+    }
+
+    assertFileExists(filePath, message = '') {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File does not exist: ${filePath}. ${message}`);
+        }
+    }
+
+    assertFileContains(filePath, searchString, message = '') {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`File does not exist: ${filePath}`);
+        }
+        const content = fs.readFileSync(filePath, 'utf8');
+        if (!content.includes(searchString)) {
+            throw new Error(`File ${filePath} does not contain "${searchString}". ${message}`);
+        }
+    }
+
+    runAll() {
+        console.log('🧪 Running tests...\n');
+        
+        let passed = 0;
+        let failed = 0;
+
+        for (const test of this.tests) {
+            try {
+                test.fn();
+                console.log(`✅ ${test.name}`);
+                passed++;
+            } catch (error) {
+                console.log(`❌ ${test.name}: ${error.message}`);
+                failed++;
+            }
+        }
+
+        console.log(`\n📊 Results: ${passed} passed, ${failed} failed`);
+        
+        if (failed > 0) {
+            process.exit(1);
+        }
+    }
+}
+
+const runner = new TestRunner();
+
+// File structure tests
+runner.test('HTML file exists', function() {
+    runner.assertFileExists('index.html');
+});
+
+runner.test('CSS file exists in correct location', function() {
+    runner.assertFileExists('styles/main.css');
+});
+
+runner.test('JavaScript file exists in correct location', function() {
+    runner.assertFileExists('scripts/app.js');
+});
+
+runner.test('Test files exist', function() {
+    runner.assertFileExists('tests/test-runner.html');
+    runner.assertFileExists('tests/test-framework.js');
+    runner.assertFileExists('tests/dom-tests.js');
+    runner.assertFileExists('tests/app-tests.js');
+});
+
+// Content validation tests
+runner.test('HTML contains required structure', function() {
+    runner.assertFileContains('index.html', 'Random Dinner Table Seating', 'HTML should contain app title');
+    runner.assertFileContains('index.html', 'app-container', 'HTML should have main container');
+    runner.assertFileContains('index.html', 'config-panel', 'HTML should have config panel');
+    runner.assertFileContains('index.html', 'table-display', 'HTML should have table display');
+    runner.assertFileContains('index.html', 'id="table-display"', 'HTML should have table display ID');
+});
+
+runner.test('CSS contains required layout', function() {
+    runner.assertFileContains('styles/main.css', 'display: grid', 'CSS should use CSS Grid');
+    runner.assertFileContains('styles/main.css', 'grid-template-columns: 30% 70%', 'CSS should have correct column layout');
+    runner.assertFileContains('styles/main.css', '.app-container', 'CSS should style app container');
+    runner.assertFileContains('styles/main.css', '.config-panel', 'CSS should style config panel');
+});
+
+runner.test('JavaScript contains initialization', function() {
+    runner.assertFileContains('scripts/app.js', 'DOMContentLoaded', 'JS should listen for DOM ready');
+    runner.assertFileContains('scripts/app.js', 'console.log', 'JS should have logging');
+    runner.assertFileContains('scripts/app.js', 'initializeApp', 'JS should have initialization function');
+});
+
+runner.test('HTML has semantic structure', function() {
+    runner.assertFileContains('index.html', '<header>', 'HTML should use semantic header');
+    runner.assertFileContains('index.html', '<main', 'HTML should use semantic main');
+    runner.assertFileContains('index.html', '<section', 'HTML should use semantic sections');
+});
+
+runner.test('CSS has responsive design', function() {
+    runner.assertFileContains('styles/main.css', '@media', 'CSS should have media queries');
+    runner.assertFileContains('styles/main.css', 'min-width: 1024px', 'CSS should enforce minimum width');
+});
+
+runner.test('Files have proper ABOUTME comments', function() {
+    runner.assertFileContains('styles/main.css', 'ABOUTME:', 'CSS should have ABOUTME comment');
+    runner.assertFileContains('scripts/app.js', 'ABOUTME:', 'JS should have ABOUTME comment');
+});
+
+// Run all tests
+runner.runAll();
