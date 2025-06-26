@@ -112,6 +112,12 @@ module.exports = {
         'validateFixedAssignment': 'readonly',
         'handleRemoveAssignment': 'readonly',
         'addRemoveButton': 'readonly',
-        'removeRemoveButton': 'readonly'
+        'removeRemoveButton': 'readonly',
+        
+        // Adjacency calculator functions
+        'calculateTableGeometry': 'readonly',
+        'calculateAdjacencyMap': 'readonly',
+        'areSeatsAdjacent': 'readonly',
+        'getCornerSeatConnections': 'readonly'
     }
 };

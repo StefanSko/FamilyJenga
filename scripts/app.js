@@ -18,6 +18,8 @@ let currentSeatElements = null;
 let currentAssignedGuests = [];
 // eslint-disable-next-line no-unused-vars
 let fixedAssignmentManager = null;
+// eslint-disable-next-line no-unused-vars
+let currentAdjacencyMap = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
@@ -161,6 +163,9 @@ function handleTableInputChange() {
         try {
             currentTableConfig = createTableConfig(topSeats, rightSeats, bottomSeats, leftSeats);
             console.log('Updated table configuration:', currentTableConfig);
+            
+            // Calculate and store adjacency map when table config changes
+            calculateAndStoreAdjacencyMap();
             
             // Render the table whenever configuration changes
             renderTableVisualization();
@@ -689,5 +694,36 @@ function handleDeleteConstraint(event) {
     
     // Update UI
     updateConstraintUI();
+}
+
+// Adjacency Map Management
+
+function calculateAndStoreAdjacencyMap() {
+    if (!currentTableConfig) {
+        console.warn('No table configuration available for adjacency calculation');
+        currentAdjacencyMap = null;
+        return;
+    }
+    
+    try {
+        // eslint-disable-next-line no-undef
+        currentAdjacencyMap = calculateAdjacencyMap(currentTableConfig);
+        console.log('Calculated adjacency map for table:', currentAdjacencyMap);
+        
+        // Log some interesting adjacency information for debugging
+        if (currentAdjacencyMap.size > 0) {
+            console.log('Adjacency examples:');
+            let count = 0;
+            for (const [seatId, adjacentSeats] of currentAdjacencyMap) {
+                console.log(`  Seat ${seatId}: adjacent to [${adjacentSeats.join(', ')}]`);
+                count++;
+                if (count >= 3) break; // Only show first 3 for brevity
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error calculating adjacency map:', error);
+        currentAdjacencyMap = null;
+    }
 }
 

@@ -307,7 +307,7 @@ Update main.css:
 
 The UI should allow selecting two different guests and adding multiple constraints, with the ability to delete them individually.
 
-## Prompt 9: Seat Adjacency Calculator
+## Prompt 9: Seat Adjacency Calculator ✅ COMPLETED
 
 Implement the mathematical logic for determining which seats are adjacent to each other.
 
