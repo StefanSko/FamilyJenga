@@ -233,11 +233,19 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         return;
     }
     
-    // Remove any existing guest name label
-    const existingNameLabel = seatElement.querySelector('.guest-name-label');
-    if (existingNameLabel) {
-        existingNameLabel.remove();
-    }
+    // Remove any existing guest name labels (be thorough)
+    const existingNameLabels = seatElement.querySelectorAll('.guest-name-label');
+    existingNameLabels.forEach(label => label.remove());
+    
+    // Also remove any text elements that might be old labels without the class
+    const allTextElements = seatElement.querySelectorAll('text');
+    allTextElements.forEach(textEl => {
+        // Keep the seat number text, remove others
+        if (!textEl.classList.contains('seat-number') && 
+            textEl.textContent !== seatElement.getAttribute('data-seat-id')) {
+            textEl.remove();
+        }
+    });
     
     if (guestName) {
         // Keep seat number in circle for clarity and scalability

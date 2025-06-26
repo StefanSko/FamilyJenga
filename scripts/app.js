@@ -925,8 +925,7 @@ function displayGeneratedSeating(arrangement) {
         return;
     }
     
-    // Clear previous generated assignments (but keep fixed ones)
-    clearPreviousGeneratedAssignments();
+    // Note: clearPreviousGeneratedAssignments() is called earlier in handleGenerateSeating
     
     // Display each assignment
     for (const [seatId, guestName] of arrangement) {
@@ -963,6 +962,7 @@ function clearPreviousGeneratedAssignments() {
         allSeats.forEach(seatElement => {
             if (seatElement.classList.contains('generated-assignment')) {
                 const seatId = seatElement.getAttribute('data-seat-id');
+                // Clear the visual display completely
                 updateSeatDisplay(seatElement, null, false);
                 console.log('Cleared generated assignment from seat:', seatId);
             }
