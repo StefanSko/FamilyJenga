@@ -1,6 +1,6 @@
 # Random Dinner Table Seating App - Implementation Prompts
 
-## Prompt 1: Project Setup & Layout
+## Prompt 1: Project Setup & Layout ✅ COMPLETED
 
 Make sure the project is properly integrated with GitHub and the config of git is:
 user: StefanSko
