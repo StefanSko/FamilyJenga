@@ -83,7 +83,11 @@
             </section>
             
             <section class="generate-section">
-                <button type="button" class="generate-btn">Generate Seating</button>
+                <button type="button" class="generate-btn" id="generate-btn">Generate Seating</button>
+                <div class="action-buttons">
+                    <button type="button" class="clear-all-btn" id="clear-all-btn">Clear All</button>
+                    <button type="button" class="example-btn" id="example-btn">Load Example</button>
+                </div>
                 <div class="loading-spinner hidden" id="loading-spinner">
                     <div class="spinner-icon"></div>
                     <span>Generating seating arrangement...</span>
@@ -110,6 +114,7 @@
     <script src="scripts/constraintValidator.js"></script>
     <script src="scripts/seatingGenerator.js"></script>
     <script src="scripts/errorHandler.js"></script>
+    <script src="scripts/testSuite.js"></script>
     <script src="scripts/app.js"></script>
 </body>
 </html>

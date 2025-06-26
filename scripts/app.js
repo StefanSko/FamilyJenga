@@ -62,6 +62,12 @@ function initializeApp() {
     
     // Initialize generate button as required by Prompt 12
     initializeGenerateButton();
+    
+    // Initialize action buttons (Clear All, Load Example) as required by Prompt 14
+    initializeActionButtons();
+    
+    // Initialize keyboard shortcuts as required by Prompt 14
+    initializeKeyboardShortcuts();
 }
 
 function testModels() {
@@ -982,7 +988,13 @@ function setLoadingState(isLoading) {
     
     if (generateBtn) {
         generateBtn.disabled = isLoading;
-        generateBtn.textContent = isLoading ? 'Generating...' : 'Generate Seating';
+        if (isLoading) {
+            generateBtn.classList.add('loading');
+            generateBtn.textContent = 'Generate Seating';
+        } else {
+            generateBtn.classList.remove('loading');
+            generateBtn.textContent = 'Generate Seating';
+        }
     }
     
     if (loadingSpinner) {
@@ -1214,5 +1226,121 @@ function updateGenerateButtonState(isValid) {
         generateBtn.classList.add('disabled');
         generateBtn.title = 'Cannot generate: constraint conflicts detected';
     }
+}
+
+// Clear All functionality
+function handleClearAll() {
+    console.log('Clear All button clicked');
+    
+    // Reset table configuration
+    document.getElementById('top-seats').value = '2';
+    document.getElementById('right-seats').value = '2';
+    document.getElementById('bottom-seats').value = '2';
+    document.getElementById('left-seats').value = '2';
+    
+    // Trigger table configuration update
+    ['top-seats', 'right-seats', 'bottom-seats', 'left-seats'].forEach(id => {
+        document.getElementById(id).dispatchEvent(new Event('input'));
+    });
+    
+    // Clear guest list
+    document.getElementById('guest-list-input').value = '';
+    document.getElementById('guest-list-input').dispatchEvent(new Event('input'));
+    
+    // Clear all fixed assignments
+    if (fixedAssignmentManager) {
+        const allAssignments = fixedAssignmentManager.getAllAssignments();
+        allAssignments.forEach((guest, seatId) => {
+            handleRemoveAssignment(seatId);
+        });
+    }
+    
+    // Clear all adjacency constraints
+    if (adjacencyConstraintManager) {
+        const allConstraints = adjacencyConstraintManager.getAllConstraints();
+        for (let i = allConstraints.length - 1; i >= 0; i--) {
+            adjacencyConstraintManager.removeConstraint(i);
+        }
+        // eslint-disable-next-line no-undef
+        renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list'));
+    }
+    
+    // Clear any status messages
+    const statusMessages = document.getElementById('status-messages');
+    if (statusMessages) {
+        statusMessages.innerHTML = '';
+    }
+    
+    // Clear any error messages
+    document.querySelectorAll('.validation-errors').forEach(container => {
+        container.innerHTML = '';
+    });
+    
+    // Show success message
+    if (errorDisplay) {
+        errorDisplay.showSuccess('All data cleared successfully', statusMessages);
+    }
+}
+
+// Load Example functionality
+function handleLoadExample() {
+    console.log('Load Example button clicked');
+    
+    // Load the simple test data
+    if (window.testSuite && window.testSuite.populateFormWithTestData) {
+        window.testSuite.populateFormWithTestData('simple');
+        
+        // Show success message
+        const statusMessages = document.getElementById('status-messages');
+        if (errorDisplay) {
+            errorDisplay.showSuccess('Example data loaded successfully', statusMessages);
+        }
+    }
+}
+
+// Initialize action buttons
+function initializeActionButtons() {
+    const clearAllBtn = document.getElementById('clear-all-btn');
+    const exampleBtn = document.getElementById('example-btn');
+    
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', handleClearAll);
+    }
+    
+    if (exampleBtn) {
+        exampleBtn.addEventListener('click', handleLoadExample);
+    }
+}
+
+// Keyboard shortcuts
+function initializeKeyboardShortcuts() {
+    document.addEventListener('keydown', function(event) {
+        // Ctrl+G or Cmd+G to generate seating
+        if ((event.ctrlKey || event.metaKey) && event.key === 'g') {
+            event.preventDefault();
+            const generateBtn = document.querySelector('.generate-btn');
+            if (generateBtn && !generateBtn.disabled) {
+                generateBtn.click();
+            }
+        }
+        
+        // Ctrl+E or Cmd+E to load example
+        if ((event.ctrlKey || event.metaKey) && event.key === 'e') {
+            event.preventDefault();
+            const exampleBtn = document.getElementById('example-btn');
+            if (exampleBtn) {
+                exampleBtn.click();
+            }
+        }
+        
+        // Ctrl+Shift+C or Cmd+Shift+C to clear all
+        if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key === 'C') {
+            event.preventDefault();
+            const clearAllBtn = document.getElementById('clear-all-btn');
+            if (clearAllBtn) {
+                clearAllBtn.click();
+            }
+        }
+    });
 }
 

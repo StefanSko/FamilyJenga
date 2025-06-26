@@ -102,6 +102,35 @@ function renderTable(tableConfig, containerElement) {
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.className = 'table-svg';
     
+    // Create defs for gradients
+    const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    
+    // Create gradient for table surface
+    const gradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+    gradient.setAttribute('id', 'tableGradient');
+    gradient.setAttribute('x1', '0%');
+    gradient.setAttribute('y1', '0%');
+    gradient.setAttribute('x2', '100%');
+    gradient.setAttribute('y2', '100%');
+    
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', '#A0522D');
+    
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop2.setAttribute('offset', '50%');
+    stop2.setAttribute('stop-color', '#8B4513');
+    
+    const stop3 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+    stop3.setAttribute('offset', '100%');
+    stop3.setAttribute('stop-color', '#654321');
+    
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    defs.appendChild(gradient);
+    svg.appendChild(defs);
+    
     // Create table surface
     const tableRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     tableRect.setAttribute('x', '40');

@@ -11,18 +11,19 @@
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     line-height: 1.6;
-    color: #333;
-    background-color: #f8f9fa;
+    color: #2C3E50;
+    background-color: #F8F9FA;
     min-width: 1024px;
 }
 
 /* Header */
 header {
-    background-color: #2c3e50;
+    background-color: #2C3E50;
     color: white;
-    padding: 1rem;
+    padding: 1.5rem;
     text-align: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 12px rgba(44, 62, 80, 0.15);
+    background: linear-gradient(135deg, #2C3E50 0%, #34495E 100%);
 }
 
 header h1 {
@@ -61,7 +62,7 @@ header h1 {
 
 .config-panel h2 {
     font-size: 1.25rem;
-    color: #2c3e50;
+    color: #2C3E50;
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #ecf0f1;
@@ -117,41 +118,48 @@ header h1 {
 
 /* Table Surface */
 .table-surface {
-    fill: #8B4513;
+    fill: url(#tableGradient);
     stroke: #654321;
-    stroke-width: 2;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    stroke-width: 3;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+    rx: 8;
+    ry: 8;
 }
 
 /* Seat Elements */
 .seat-group {
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
 }
 
 .seat-group:hover {
-    transform: scale(1.1);
+    transform: scale(1.15) translateZ(0);
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
 }
 
 .seat-circle {
     fill: #ecf0f1;
     stroke: #34495e;
     stroke-width: 2;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
 }
 
 .seat-group:hover .seat-circle {
     fill: #3498db;
     stroke: #2980b9;
+    filter: drop-shadow(0 2px 4px rgba(52, 152, 219, 0.3));
 }
 
 .seat-number {
-    fill: #2c3e50;
+    fill: #2C3E50;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 12px;
     font-weight: 600;
     user-select: none;
     pointer-events: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
 
 .seat-group:hover .seat-number {
@@ -160,8 +168,9 @@ header h1 {
 
 /* Occupied Seats */
 .seat-group.occupied .seat-circle {
-    fill: #e74c3c;
+    fill: #E74C3C;
     stroke: #c0392b;
+    animation: seatOccupied 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .seat-group.occupied .seat-number {
@@ -176,8 +185,9 @@ header h1 {
 
 /* Fixed Assignment Seats */
 .seat-group.fixed-assignment .seat-circle {
-    fill: #3498db;
-    stroke: #2980b9;
+    fill: #2C3E50;
+    stroke: #1a252f;
+    filter: drop-shadow(0 2px 6px rgba(44, 62, 80, 0.3));
 }
 
 .seat-group.fixed-assignment:hover .seat-circle {
@@ -187,8 +197,10 @@ header h1 {
 
 /* Generated Assignment Seats */
 .seat-group.generated-assignment .seat-circle {
-    fill: #27ae60;
+    fill: #27AE60;
     stroke: #229954;
+    animation: seatGenerated 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: drop-shadow(0 2px 6px rgba(39, 174, 96, 0.3));
 }
 
 .seat-group.generated-assignment:hover .seat-circle {
@@ -232,9 +244,10 @@ select {
     width: 100%;
     padding: 0.75rem;
     border: 2px solid #e1e8ed;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 1rem;
-    transition: border-color 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: #fff;
 }
 
 input[type="number"]:focus,
@@ -242,19 +255,23 @@ textarea:focus,
 select:focus {
     outline: none;
     border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    transform: translateY(-1px);
 }
 
 input[type="number"].error,
 textarea.error {
-    border-color: #e74c3c;
+    border-color: #E74C3C;
     background-color: #fdf2f2;
+    animation: inputError 0.4s ease;
 }
 
 label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
-    color: #2c3e50;
+    color: #2C3E50;
+    transition: color 0.3s ease;
 }
 
 /* Input groups */
@@ -382,23 +399,94 @@ label {
 .generate-btn {
     width: 100%;
     padding: 1rem;
-    background-color: #27ae60;
+    background-color: #27AE60;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;
     font-size: 1.1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 8px rgba(39, 174, 96, 0.2);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1rem;
 }
 
 .generate-btn:hover {
     background-color: #229954;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(39, 174, 96, 0.3);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);
 }
 
 .generate-btn:disabled {
     background-color: #95a5a6;
     cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+/* Action buttons container */
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+/* Clear All button */
+.clear-all-btn {
+    padding: 0.75rem;
+    background-color: #E74C3C;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2);
+}
+
+.clear-all-btn:hover {
+    background-color: #c0392b;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.clear-all-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(231, 76, 60, 0.2);
+}
+
+/* Example button */
+.example-btn {
+    padding: 0.75rem;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
+}
+
+.example-btn:hover {
+    background-color: #2980b9;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+}
+
+.example-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(52, 152, 219, 0.2);
 }
 
 /* Responsive design */
@@ -460,10 +548,11 @@ label {
     max-height: 200px;
     overflow-y: auto;
     border: 2px solid #e1e8ed;
-    border-radius: 4px;
+    border-radius: 8px;
     padding: 0.75rem;
-    background-color: #f8f9fa;
+    background-color: #F8F9FA;
     min-height: 100px;
+    transition: all 0.3s ease;
 }
 
 .guest-list-container:empty {
@@ -492,14 +581,15 @@ label {
     font-weight: 500;
     cursor: grab;
     user-select: none;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid transparent;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .guest-item:hover {
     background-color: #2980b9;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.25);
 }
 
 .guest-item.draggable-guest {
@@ -515,20 +605,22 @@ label {
     opacity: 0.6;
     cursor: grabbing;
     transform: rotate(5deg) scale(1.05);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
     z-index: 1000;
+    animation: dragPulse 0.8s ease-in-out infinite;
 }
 
 /* Drop Zone Highlighting */
 .seat-group.droppable-seat {
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .seat-group.drag-over .seat-circle {
     fill: #f39c12 !important;
     stroke: #e67e22 !important;
     stroke-width: 3;
-    filter: drop-shadow(0 0 8px rgba(243, 156, 18, 0.6));
+    filter: drop-shadow(0 0 12px rgba(243, 156, 18, 0.8));
+    animation: dropZonePulse 0.8s ease-in-out infinite;
 }
 
 .seat-group.drag-over .seat-number {
@@ -544,11 +636,12 @@ label {
 
 /* Remove button styling for fixed assignments */
 .remove-button {
-    fill: #e74c3c;
+    fill: #E74C3C;
     stroke: #c0392b;
     stroke-width: 2;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     opacity: 0;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
 }
 
 .remove-icon {
@@ -723,17 +816,19 @@ label {
     background-color: #3498db;
     color: white;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);
 }
 
 .add-constraint-btn:hover:not(:disabled) {
     background-color: #2980b9;
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
 }
 
 .add-constraint-btn:disabled {
@@ -772,9 +867,10 @@ label {
     background-color: #ecf0f1;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.5rem;
-    border-radius: 4px;
+    border-radius: 6px;
     border-left: 3px solid #3498db;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .constraint-item:last-child {
@@ -783,7 +879,8 @@ label {
 
 .constraint-item:hover {
     background-color: #d5dbdb;
-    transform: translateX(2px);
+    transform: translateX(4px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .constraint-text {
@@ -793,7 +890,7 @@ label {
 }
 
 .delete-constraint-btn {
-    background-color: #e74c3c;
+    background-color: #E74C3C;
     color: white;
     border: none;
     border-radius: 50%;
@@ -805,13 +902,15 @@ label {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     line-height: 1;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2);
 }
 
 .delete-constraint-btn:hover {
     background-color: #c0392b;
-    transform: scale(1.1);
+    transform: scale(1.2) rotate(90deg);
+    box-shadow: 0 3px 6px rgba(231, 76, 60, 0.3);
 }
 
 .delete-constraint-btn:active {
@@ -1257,6 +1356,207 @@ label {
     .error-close {
         border: 1px solid currentColor;
     }
+}
+
+/* Animations */
+@keyframes seatOccupied {
+    0% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes seatGenerated {
+    0% {
+        transform: scale(0.8) rotate(-180deg);
+        opacity: 0;
+    }
+    50% {
+        transform: scale(1.1) rotate(-90deg);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+@keyframes dropZonePulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes dragPulse {
+    0% {
+        transform: rotate(5deg) scale(1.05);
+    }
+    50% {
+        transform: rotate(-5deg) scale(1.08);
+    }
+    100% {
+        transform: rotate(5deg) scale(1.05);
+    }
+}
+
+@keyframes inputError {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+/* Button ripple effect */
+.generate-btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.generate-btn:active::before {
+    width: 300px;
+    height: 300px;
+}
+
+/* Loading state for generate button */
+.generate-btn.loading {
+    color: transparent;
+    pointer-events: none;
+}
+
+.generate-btn.loading::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    top: 50%;
+    left: 50%;
+    margin-left: -10px;
+    margin-top: -10px;
+    border: 2px solid white;
+    border-radius: 50%;
+    border-top-color: transparent;
+    animation: spin 1s linear infinite;
+}
+
+/* SVG Gradient definition (add to table renderer) */
+.table-gradient-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    visibility: hidden;
+}
+
+/* Smooth font rendering */
+body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus visible improvements */
+:focus-visible {
+    outline: 2px solid #3498db;
+    outline-offset: 2px;
+}
+
+/* Better link styling */
+a {
+    color: #3498db;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    color: #2980b9;
+    text-decoration: underline;
+}
+
+/* Enhanced scrollbar styling */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c7cd;
+    border-radius: 5px;
+    transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #9aa0a6;
+}
+
+/* Print styles */
+@media print {
+    body {
+        background: white;
+    }
+    
+    .config-panel {
+        display: none;
+    }
+    
+    .table-display {
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    header {
+        background: none;
+        color: #2C3E50;
+        box-shadow: none;
+    }
+}
+
+/* High contrast mode improvements */
+@media (prefers-contrast: high) {
+    .generate-btn,
+    .add-constraint-btn {
+        border: 2px solid currentColor;
+    }
+    
+    input:focus,
+    textarea:focus,
+    select:focus {
+        outline: 3px solid currentColor;
+        outline-offset: 1px;
+    }
+}
+
+/* Dark mode support (future enhancement) */
+@media (prefers-color-scheme: dark) {
+    /* Placeholder for future dark mode styles */
 }
 
 /* Accessibility */
