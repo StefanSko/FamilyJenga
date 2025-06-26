@@ -422,20 +422,27 @@ function calculateLabelPosition(cx, cy, seatSide, totalSeats) {
         offset = 25; // Generous spacing for small tables
     }
     
+    // Increase offset for top/bottom seats since they'll be rotated and need more clearance
+    if (seatSide === 'top' || seatSide === 'bottom') {
+        offset += 10; // Extra clearance for rotated labels
+    }
+    
     let x, y, anchor, baseline;
     
     switch (seatSide) {
     case 'top':
+        // For rotated labels, position them further out and centered horizontally
         x = cx;
-        y = Math.max(15, cy - offset); // Prevent going above SVG bounds
+        y = Math.max(15, cy - offset);
         anchor = 'middle';
-        baseline = 'text-after-edge';
+        baseline = 'central'; // Use central for rotated text
         break;
     case 'bottom':
+        // For rotated labels, position them further out and centered horizontally
         x = cx;
         y = cy + offset;
         anchor = 'middle';
-        baseline = 'text-before-edge';
+        baseline = 'central'; // Use central for rotated text
         break;
     case 'left':
         // For seats very close to left edge, put label on the right side instead
