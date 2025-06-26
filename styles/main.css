@@ -122,8 +122,11 @@ header h1 {
     stroke: #654321;
     stroke-width: 3;
     filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
-    rx: 8;
-    ry: 8;
+}
+
+/* Fallback for table surface if gradient fails */
+.table-surface:not([fill*="url"]) {
+    fill: #8B4513;
 }
 
 /* Seat Elements */
@@ -175,7 +178,8 @@ header h1 {
 
 .seat-group.occupied .seat-number {
     fill: white;
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .seat-group.occupied:hover .seat-circle {
@@ -628,10 +632,52 @@ label {
     font-weight: bold;
 }
 
-/* Occupied seat text styling */
+/* Occupied seat text styling (now shows initials) */
 .seat-group.occupied .seat-number {
-    font-size: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    fill: white;
+}
+
+/* Guest name labels positioned outside circles */
+.guest-name-label {
+    fill: #2C3E50;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 12px;
     font-weight: 600;
+    pointer-events: none;
+    user-select: none;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    opacity: 0;
+    animation: fadeInLabel 0.5s ease forwards;
+}
+
+@keyframes fadeInLabel {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Guest name label styling for different assignment types */
+.seat-group.fixed-assignment .guest-name-label {
+    fill: #2C3E50;
+    font-weight: 700;
+}
+
+.seat-group.generated-assignment .guest-name-label {
+    fill: #27AE60;
+    font-weight: 600;
+}
+
+/* Hover effects for guest name labels */
+.seat-group:hover .guest-name-label {
+    fill: #3498db;
+    font-weight: 700;
 }
 
 /* Remove button styling for fixed assignments */

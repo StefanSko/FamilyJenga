@@ -188,14 +188,13 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         return;
     }
     
-    // For SVG elements, use a different approach to find the text element
+    // Find the seat number text element
     let seatText = seatElement.querySelector('.seat-number');
     
-    // If that doesn't work, try finding by tag name since we know there should be a text element
     if (!seatText) {
         const textElements = seatElement.querySelectorAll('text');
         if (textElements.length > 0) {
-            seatText = textElements[0]; // Use the first text element
+            seatText = textElements[0];
         }
     }
     
@@ -204,20 +203,26 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         return;
     }
     
+    // Remove any existing guest name label
+    const existingNameLabel = seatElement.querySelector('.guest-name-label');
+    if (existingNameLabel) {
+        existingNameLabel.remove();
+    }
+    
     if (guestName) {
-        // Show guest name
-        seatText.textContent = guestName;
+        // Show guest initials in the circle
+        const initials = getGuestInitials(guestName);
+        seatText.textContent = initials;
         seatElement.classList.add('occupied');
+        
+        // Create guest name label positioned outside the circle
+        addGuestNameLabel(seatElement, guestName);
         
         if (isFixed) {
             seatElement.classList.add('fixed-assignment');
-            
-            // Add remove button for fixed assignments
             addRemoveButton(seatElement);
         } else {
             seatElement.classList.add('generated-assignment');
-            
-            // Remove any existing remove button for generated assignments
             removeRemoveButton(seatElement);
         }
     } else {
@@ -225,9 +230,83 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         const seatId = seatElement.getAttribute('data-seat-id');
         seatText.textContent = seatId;
         seatElement.classList.remove('occupied', 'fixed-assignment', 'generated-assignment');
-        
-        // Remove any existing remove button
         removeRemoveButton(seatElement);
+    }
+}
+
+// Helper function to get guest initials
+function getGuestInitials(guestName) {
+    return guestName
+        .split(' ')
+        .map(name => name.charAt(0).toUpperCase())
+        .slice(0, 2) // Take first 2 initials maximum
+        .join('');
+}
+
+// Helper function to add guest name label
+function addGuestNameLabel(seatElement, guestName) {
+    const seatCircle = seatElement.querySelector('.seat-circle');
+    if (!seatCircle) return;
+    
+    const cx = parseFloat(seatCircle.getAttribute('cx'));
+    const cy = parseFloat(seatCircle.getAttribute('cy'));
+    const seatSide = seatElement.getAttribute('data-side');
+    
+    // Calculate label position based on seat side
+    const labelPosition = calculateLabelPosition(cx, cy, seatSide);
+    
+    // Create guest name label
+    const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    nameLabel.setAttribute('x', labelPosition.x);
+    nameLabel.setAttribute('y', labelPosition.y);
+    nameLabel.setAttribute('text-anchor', labelPosition.anchor);
+    nameLabel.setAttribute('dominant-baseline', labelPosition.baseline);
+    nameLabel.className = 'guest-name-label';
+    nameLabel.textContent = guestName;
+    
+    seatElement.appendChild(nameLabel);
+}
+
+// Helper function to calculate label position
+function calculateLabelPosition(cx, cy, seatSide) {
+    const offset = 25; // Distance from circle center
+    
+    switch (seatSide) {
+    case 'top':
+        return {
+            x: cx,
+            y: cy - offset,
+            anchor: 'middle',
+            baseline: 'text-after-edge'
+        };
+    case 'bottom':
+        return {
+            x: cx,
+            y: cy + offset,
+            anchor: 'middle',
+            baseline: 'text-before-edge'
+        };
+    case 'left':
+        return {
+            x: cx - offset,
+            y: cy,
+            anchor: 'end',
+            baseline: 'central'
+        };
+    case 'right':
+        return {
+            x: cx + offset,
+            y: cy,
+            anchor: 'start',
+            baseline: 'central'
+        };
+    default:
+        return {
+            x: cx,
+            y: cy + offset,
+            anchor: 'middle',
+            baseline: 'text-before-edge'
+        };
     }
 }
 
