@@ -138,8 +138,22 @@ function renderTable(tableConfig, containerElement) {
     tableRect.setAttribute('width', '400');
     tableRect.setAttribute('height', '300');
     tableRect.setAttribute('rx', '10');
+    tableRect.setAttribute('ry', '10');
+    // Try gradient first, fallback to solid color
+    tableRect.setAttribute('fill', 'url(#tableGradient)');
+    tableRect.setAttribute('stroke', '#654321');
+    tableRect.setAttribute('stroke-width', '3');
+    tableRect.style.filter = 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))';
     tableRect.className = 'table-surface';
     svg.appendChild(tableRect);
+    
+    // Fallback check: if gradient doesn't work, use solid color
+    setTimeout(() => {
+        const computedFill = window.getComputedStyle(tableRect).fill;
+        if (computedFill === 'none' || computedFill === 'black' || computedFill === 'rgb(0, 0, 0)') {
+            tableRect.setAttribute('fill', '#8B4513');
+        }
+    }, 100);
     
     // Store seat elements for return
     const seatElements = {};
@@ -157,6 +171,10 @@ function renderTable(tableConfig, containerElement) {
         seatCircle.setAttribute('cx', seatPos.x);
         seatCircle.setAttribute('cy', seatPos.y);
         seatCircle.setAttribute('r', '15');
+        seatCircle.setAttribute('fill', '#ecf0f1');
+        seatCircle.setAttribute('stroke', '#34495e');
+        seatCircle.setAttribute('stroke-width', '2');
+        seatCircle.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.1))';
         seatCircle.className = 'seat-circle';
         
         // Seat number text
@@ -164,6 +182,12 @@ function renderTable(tableConfig, containerElement) {
         seatText.setAttribute('x', seatPos.x);
         seatText.setAttribute('y', seatPos.y + 5);
         seatText.setAttribute('text-anchor', 'middle');
+        seatText.setAttribute('fill', '#2C3E50');
+        seatText.setAttribute('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
+        seatText.setAttribute('font-size', '12');
+        seatText.setAttribute('font-weight', '600');
+        seatText.style.userSelect = 'none';
+        seatText.style.pointerEvents = 'none';
         seatText.className = 'seat-number';
         seatText.textContent = seatPos.seatId;
         
@@ -215,20 +239,44 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         seatText.textContent = initials;
         seatElement.classList.add('occupied');
         
-        // Create guest name label positioned outside the circle
-        addGuestNameLabel(seatElement, guestName);
-        
-        if (isFixed) {
-            seatElement.classList.add('fixed-assignment');
-            addRemoveButton(seatElement);
-        } else {
-            seatElement.classList.add('generated-assignment');
-            removeRemoveButton(seatElement);
+        // Update seat appearance for occupied state
+        const seatCircle = seatElement.querySelector('.seat-circle');
+        if (seatCircle) {
+            seatText.setAttribute('fill', 'white');
+            seatText.setAttribute('font-size', '12');
+            seatText.setAttribute('font-weight', '700');
+            
+            if (isFixed) {
+                seatCircle.setAttribute('fill', '#2C3E50');
+                seatCircle.setAttribute('stroke', '#1a252f');
+                seatElement.classList.add('fixed-assignment');
+                addRemoveButton(seatElement);
+            } else {
+                seatCircle.setAttribute('fill', '#27AE60');
+                seatCircle.setAttribute('stroke', '#229954');
+                seatElement.classList.add('generated-assignment');
+                removeRemoveButton(seatElement);
+            }
         }
+        
+        // Create guest name label positioned outside the circle
+        addGuestNameLabel(seatElement, guestName, isFixed);
+        
     } else {
-        // Show seat number
+        // Show seat number - reset to default state
         const seatId = seatElement.getAttribute('data-seat-id');
         seatText.textContent = seatId;
+        seatText.setAttribute('fill', '#2C3E50');
+        seatText.setAttribute('font-size', '12');
+        seatText.setAttribute('font-weight', '600');
+        
+        // Reset seat circle to default
+        const seatCircle = seatElement.querySelector('.seat-circle');
+        if (seatCircle) {
+            seatCircle.setAttribute('fill', '#ecf0f1');
+            seatCircle.setAttribute('stroke', '#34495e');
+        }
+        
         seatElement.classList.remove('occupied', 'fixed-assignment', 'generated-assignment');
         removeRemoveButton(seatElement);
     }
@@ -244,7 +292,7 @@ function getGuestInitials(guestName) {
 }
 
 // Helper function to add guest name label
-function addGuestNameLabel(seatElement, guestName) {
+function addGuestNameLabel(seatElement, guestName, isFixed) {
     const seatCircle = seatElement.querySelector('.seat-circle');
     if (!seatCircle) return;
     
@@ -261,6 +309,21 @@ function addGuestNameLabel(seatElement, guestName) {
     nameLabel.setAttribute('y', labelPosition.y);
     nameLabel.setAttribute('text-anchor', labelPosition.anchor);
     nameLabel.setAttribute('dominant-baseline', labelPosition.baseline);
+    nameLabel.setAttribute('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
+    nameLabel.setAttribute('font-size', '12');
+    nameLabel.setAttribute('font-weight', '600');
+    nameLabel.style.userSelect = 'none';
+    nameLabel.style.pointerEvents = 'none';
+    
+    // Set color based on assignment type
+    if (isFixed) {
+        nameLabel.setAttribute('fill', '#2C3E50');
+        nameLabel.setAttribute('font-weight', '700');
+    } else {
+        nameLabel.setAttribute('fill', '#27AE60');
+        nameLabel.setAttribute('font-weight', '600');
+    }
+    
     nameLabel.className = 'guest-name-label';
     nameLabel.textContent = guestName;
     
