@@ -244,7 +244,8 @@ select:focus {
     border-color: #3498db;
 }
 
-input[type="number"].error {
+input[type="number"].error,
+textarea.error {
     border-color: #e74c3c;
     background-color: #fdf2f2;
 }
@@ -301,6 +302,80 @@ label {
 
 .validation-errors .error-item:last-child {
     margin-bottom: 0;
+}
+
+/* Guest List Styling */
+.guest-input-container {
+    margin-bottom: 1rem;
+}
+
+.guest-input-container label {
+    color: #2c3e50;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+}
+
+#guest-list-input {
+    width: 100%;
+    min-height: 200px;
+    resize: vertical;
+    font-family: inherit;
+    line-height: 1.4;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+#guest-list-input::placeholder {
+    color: #95a5a6;
+    opacity: 1;
+}
+
+#guest-list-input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.guest-count-display {
+    padding: 0.75rem;
+    background-color: #ecf0f1;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+    font-size: 1rem;
+    color: #2c3e50;
+}
+
+#guest-count {
+    font-weight: 600;
+    color: #3498db;
+    font-size: 1.1rem;
+}
+
+/* Guest list validation states */
+.guest-list.valid .guest-count-display {
+    background-color: #d5f4e6;
+    color: #27ae60;
+}
+
+.guest-list.invalid .guest-count-display {
+    background-color: #fdeaea;
+    color: #e74c3c;
+}
+
+/* Guest list responsive design */
+@media (max-width: 1200px) {
+    #guest-list-input {
+        min-height: 180px;
+    }
+}
+
+@media (max-width: 1024px) {
+    #guest-list-input {
+        min-height: 160px;
+    }
+    
+    .guest-count-display {
+        font-size: 0.9rem;
+    }
 }
 
 /* Generate button */

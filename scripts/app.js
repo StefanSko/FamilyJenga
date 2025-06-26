@@ -30,6 +30,9 @@ function initializeApp() {
     
     // Initialize table configuration UI as required by Prompt 3
     initializeTableConfigurationUI();
+    
+    // Initialize guest list UI as required by Prompt 5
+    initializeGuestListUI();
 }
 
 function testModels() {
@@ -216,6 +219,140 @@ function showTableRenderError(errorMessage) {
                 <small>${errorMessage}</small>
             </div>
         `;
+    }
+}
+
+// Guest List Management Functions
+
+function initializeGuestListUI() {
+    console.log('Initializing guest list UI...');
+    
+    const guestInput = document.getElementById('guest-list-input');
+    if (guestInput) {
+        guestInput.addEventListener('input', handleGuestListChange);
+        guestInput.addEventListener('change', handleGuestListChange);
+    }
+    
+    // Initialize with empty state
+    updateGuestCountDisplay(0);
+    clearGuestValidationErrors();
+}
+
+function handleGuestListChange() {
+    const guestInput = document.getElementById('guest-list-input');
+    if (!guestInput) {
+        console.error('Guest list input element not found');
+        return;
+    }
+    
+    const inputText = guestInput.value;
+    
+    // Parse and validate guest list
+    const guestResult = parseAndValidateGuestList(inputText);
+    
+    // Update guest count display
+    updateGuestCountDisplay(guestResult.guests.length);
+    
+    // Clear previous validation state
+    clearGuestValidationErrors();
+    updateGuestListValidationState(true);
+    
+    if (guestResult.isValid) {
+        // Store valid guest list
+        currentGuestList = guestResult.guests;
+        console.log('Updated guest list:', currentGuestList);
+        
+        // Validate against current table configuration
+        if (currentTableConfig) {
+            const countValidation = validateGuestSeatCount(guestResult.guests.length, currentTableConfig.totalSeats);
+            if (!countValidation.isValid) {
+                showGuestValidationErrors(countValidation.errors);
+                updateGuestListValidationState(false);
+            }
+        }
+    } else {
+        // Show validation errors
+        showGuestValidationErrors(guestResult.errors);
+        updateGuestListValidationState(false);
+        currentGuestList = [];
+    }
+}
+
+function parseAndValidateGuestList(inputText) {
+    // Parse guest list using existing model function
+    const guests = parseGuestList(inputText);
+    
+    // Validate guest list using existing model function
+    const validation = validateGuestList(guests);
+    
+    return {
+        guests: guests,
+        isValid: validation.isValid,
+        errors: validation.errors
+    };
+}
+
+function validateGuestSeatCount(guestCount, seatCount) {
+    // Use existing validation function
+    return validateGuestCount(guestCount, seatCount);
+}
+
+// eslint-disable-next-line no-unused-vars
+function validateGuestListWithTable(guests, tableConfig) {
+    if (!tableConfig) {
+        return {
+            isValid: false,
+            errors: ['No table configuration available']
+        };
+    }
+    
+    const guestValidation = validateGuestList(guests);
+    if (!guestValidation.isValid) {
+        return guestValidation;
+    }
+    
+    const countValidation = validateGuestCount(guests.length, tableConfig.totalSeats);
+    return countValidation;
+}
+
+function updateGuestCountDisplay(count) {
+    const countDisplay = document.getElementById('guest-count');
+    if (countDisplay) {
+        countDisplay.textContent = count.toString();
+    }
+}
+
+function showGuestValidationErrors(errors) {
+    const errorContainer = document.getElementById('guest-validation-errors');
+    if (!errorContainer) {
+        return;
+    }
+    
+    errorContainer.innerHTML = '';
+    
+    errors.forEach(error => {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-item';
+        errorDiv.textContent = error;
+        errorContainer.appendChild(errorDiv);
+    });
+}
+
+function clearGuestValidationErrors() {
+    const errorContainer = document.getElementById('guest-validation-errors');
+    if (errorContainer) {
+        errorContainer.innerHTML = '';
+    }
+}
+
+function updateGuestListValidationState(isValid) {
+    const guestInput = document.getElementById('guest-list-input');
+    if (guestInput) {
+        if (isValid) {
+            guestInput.classList.remove('error');
+        } else {
+            guestInput.classList.add('error');
+        }
     }
 }
 

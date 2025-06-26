@@ -78,6 +78,17 @@ module.exports = {
         'clearInputErrorStates': 'readonly',
         'renderTableVisualization': 'readonly',
         'clearTableVisualization': 'readonly',
-        'showTableRenderError': 'readonly'
+        'showTableRenderError': 'readonly',
+        
+        // Guest list functions
+        'initializeGuestListUI': 'readonly',
+        'handleGuestListChange': 'readonly',
+        'parseAndValidateGuestList': 'readonly',
+        'validateGuestSeatCount': 'readonly',
+        'validateGuestListWithTable': 'readonly',
+        'updateGuestCountDisplay': 'readonly',
+        'showGuestValidationErrors': 'readonly',
+        'clearGuestValidationErrors': 'readonly',
+        'updateGuestListValidationState': 'readonly'
     }
 };

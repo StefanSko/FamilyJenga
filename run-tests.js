@@ -93,6 +93,7 @@ runner.test('Test files exist', function() {
     runner.assertFileExists('tests/validation-tests.js');
     runner.assertFileExists('tests/ui-tests.js');
     runner.assertFileExists('tests/table-renderer-tests.js');
+    runner.assertFileExists('tests/guest-list-tests.js');
 });
 
 // Content validation tests
@@ -155,6 +156,13 @@ runner.test('HTML contains table configuration inputs', function() {
     runner.assertFileContains('index.html', 'id="table-validation-errors"', 'HTML should have validation errors container');
 });
 
+runner.test('HTML contains guest list inputs', function() {
+    runner.assertFileContains('index.html', 'id="guest-list-input"', 'HTML should have guest list textarea');
+    runner.assertFileContains('index.html', 'id="guest-count"', 'HTML should have guest count display');
+    runner.assertFileContains('index.html', 'id="guest-validation-errors"', 'HTML should have guest validation errors container');
+    runner.assertFileContains('index.html', 'rows="10"', 'HTML should have textarea with 10 rows');
+});
+
 runner.test('CSS contains form styling', function() {
     runner.assertFileContains('styles/main.css', '.input-group', 'CSS should style input groups');
     runner.assertFileContains('styles/main.css', '.total-display', 'CSS should style total display');
@@ -167,6 +175,13 @@ runner.test('CSS contains table visualization styling', function() {
     runner.assertFileContains('styles/main.css', '.seat-group', 'CSS should style seat groups');
     runner.assertFileContains('styles/main.css', '.seat-circle', 'CSS should style seat circles');
     runner.assertFileContains('styles/main.css', '.table-surface', 'CSS should style table surface');
+});
+
+runner.test('CSS contains guest list styling', function() {
+    runner.assertFileContains('styles/main.css', '.guest-input-container', 'CSS should style guest input container');
+    runner.assertFileContains('styles/main.css', '.guest-count-display', 'CSS should style guest count display');
+    runner.assertFileContains('styles/main.css', '#guest-list-input', 'CSS should style guest list textarea');
+    runner.assertFileContains('styles/main.css', 'textarea.error', 'CSS should have textarea error styling');
 });
 
 // Run all tests
