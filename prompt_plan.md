@@ -134,7 +134,7 @@ Update main.css:
 
 The table should dynamically resize and reposition seats based on the configuration, always fitting within the display area.
 
-## Prompt 5: Guest List Management
+## Prompt 5: Guest List Management ✅ COMPLETED
 
 Implement the guest list input with parsing and validation.
 
