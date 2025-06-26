@@ -1440,6 +1440,39 @@ function handleImportConfig(event) {
                 console.log('Calling handleTableInputChange...');
                 handleTableInputChange();
                 console.log('Table rendering completed');
+                
+                // Apply fixed assignments AFTER table is rendered
+                if (config.fixedAssignments && fixedAssignmentManager) {
+                    // Clear existing assignments first
+                    const existingAssignments = fixedAssignmentManager.getAllAssignments();
+                    Object.keys(existingAssignments).forEach(seatId => {
+                        handleRemoveAssignment(seatId);
+                    });
+                    
+                    // Add imported assignments to data structures
+                    Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                        fixedAssignmentManager.addAssignment(guestName, seatId);
+                    });
+                    
+                    // Update visuals after a short delay to ensure table is rendered
+                    setTimeout(() => {
+                        console.log('Updating seat visuals for fixed assignments...');
+                        console.log('currentSeatElements available:', !!currentSeatElements);
+                        if (currentSeatElements) {
+                            console.log('Available seat IDs:', Object.keys(currentSeatElements));
+                        }
+                        
+                        Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                            console.log(`Trying to update seat ${seatId} with guest ${guestName}`);
+                            if (currentSeatElements && currentSeatElements[seatId]) {
+                                console.log(`Found seat element for seat ${seatId}, updating display`);
+                                updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+                            } else {
+                                console.warn(`No seat element found for seat ${seatId}`);
+                            }
+                        });
+                    }, 100);
+                }
             }
             
             // Apply guest list
@@ -1449,39 +1482,6 @@ function handleImportConfig(event) {
                     guestListInput.value = config.guestList.join('\n');
                     guestListInput.dispatchEvent(new Event('input'));
                 }
-            }
-            
-            // Apply fixed assignments
-            if (config.fixedAssignments && fixedAssignmentManager) {
-                // Clear existing assignments first
-                const existingAssignments = fixedAssignmentManager.getAllAssignments();
-                Object.keys(existingAssignments).forEach(seatId => {
-                    handleRemoveAssignment(seatId);
-                });
-                
-                // Add imported assignments with retry for visual updates
-                Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                    fixedAssignmentManager.addAssignment(guestName, seatId);
-                });
-                
-                // Update visuals after a short delay to ensure table is rendered
-                setTimeout(() => {
-                    console.log('Updating seat visuals for fixed assignments...');
-                    console.log('currentSeatElements available:', !!currentSeatElements);
-                    if (currentSeatElements) {
-                        console.log('Available seat IDs:', Object.keys(currentSeatElements));
-                    }
-                    
-                    Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                        console.log(`Trying to update seat ${seatId} with guest ${guestName}`);
-                        if (currentSeatElements && currentSeatElements[seatId]) {
-                            console.log(`Found seat element for seat ${seatId}, updating display`);
-                            updateSeatDisplay(currentSeatElements[seatId], guestName, true);
-                        } else {
-                            console.warn(`No seat element found for seat ${seatId}`);
-                        }
-                    });
-                }, 100);
             }
             
             // Apply adjacency constraints

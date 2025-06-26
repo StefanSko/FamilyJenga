@@ -212,6 +212,7 @@ function renderTable(tableConfig, containerElement) {
 // Function to update seat display (for later use with assignments)
 function updateSeatDisplay(seatElement, guestName, isFixed) {
     console.log('updateSeatDisplay called:', { guestName, isFixed, seatElement });
+    console.trace('Call stack for updateSeatDisplay');
     
     if (!seatElement) {
         console.error('updateSeatDisplay: seatElement is null');
