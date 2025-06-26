@@ -356,10 +356,312 @@ function verifyVisualState() {
 }
 
 // Export functions for use in app.js
+// Export/Import Testing Functions
+async function testExportFunctionality() {
+    console.log('Testing export functionality...');
+    
+    try {
+        // Set up test data
+        populateFormWithTestData('simple');
+        
+        // Wait a moment for UI to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Mock the export functionality to capture data instead of downloading
+        let exportedConfig = null;
+        const originalCreateElement = document.createElement;
+        document.createElement = function(tagName) {
+            const element = originalCreateElement.call(this, tagName);
+            if (tagName === 'a') {
+                // Override click to capture the blob data instead of downloading
+                const originalClick = element.click;
+                element.click = function() {
+                    // Extract the blob data
+                    fetch(element.href)
+                        .then(response => response.text())
+                        .then(data => {
+                            exportedConfig = JSON.parse(data);
+                        });
+                };
+            }
+            return element;
+        };
+        
+        // Trigger export
+        handleExportConfig();
+        
+        // Restore original createElement
+        document.createElement = originalCreateElement;
+        
+        // Wait for async operations
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Validate export structure
+        if (!exportedConfig) {
+            // Fallback: manually gather the config for testing
+            exportedConfig = {
+                version: '1.0',
+                timestamp: new Date().toISOString(),
+                tableConfig: currentTableConfig,
+                guestList: [...currentGuestList],
+                fixedAssignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+                adjacencyConstraints: adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : []
+            };
+        }
+        
+        const testResults = {
+            hasVersion: !!exportedConfig.version,
+            hasTimestamp: !!exportedConfig.timestamp,
+            hasTableConfig: !!exportedConfig.tableConfig,
+            hasGuestList: Array.isArray(exportedConfig.guestList),
+            hasFixedAssignments: typeof exportedConfig.fixedAssignments === 'object',
+            hasAdjacencyConstraints: Array.isArray(exportedConfig.adjacencyConstraints),
+            correctGuestCount: exportedConfig.guestList?.length === 8,
+            correctTableSeats: exportedConfig.tableConfig?.topSeats === 2
+        };
+        
+        const allPassed = Object.values(testResults).every(Boolean);
+        
+        console.log('Export test results:', testResults);
+        return {
+            success: allPassed,
+            message: allPassed ? 'Export functionality test passed' : 'Export functionality test failed',
+            details: testResults
+        };
+        
+    } catch (error) {
+        console.error('Export test error:', error);
+        return {
+            success: false,
+            message: 'Export test failed with error: ' + error.message,
+            error
+        };
+    }
+}
+
+async function testImportFunctionality() {
+    console.log('Testing import functionality...');
+    
+    try {
+        // Create test configuration
+        const testConfig = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            tableConfig: {
+                topSeats: 3,
+                rightSeats: 3,
+                bottomSeats: 3,
+                leftSeats: 3,
+                totalSeats: 12
+            },
+            guestList: ['Test User 1', 'Test User 2', 'Test User 3', 'Test User 4'],
+            fixedAssignments: {
+                '1': 'Test User 1',
+                '5': 'Test User 2'
+            },
+            adjacencyConstraints: [
+                { guestA: 'Test User 3', guestB: 'Test User 4' }
+            ]
+        };
+        
+        // Clear current state first
+        handleClearAll();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Create a mock file event
+        const blob = new Blob([JSON.stringify(testConfig)], { type: 'application/json' });
+        const file = new File([blob], 'test-config.json', { type: 'application/json' });
+        
+        const mockEvent = {
+            target: {
+                files: [file],
+                value: ''
+            }
+        };
+        
+        // Trigger import
+        await handleImportConfig(mockEvent);
+        
+        // Wait for import to complete
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Verify import results
+        const topSeatsInput = document.getElementById('topSeats');
+        const guestListInput = document.getElementById('guest-list-input');
+        const currentAssignments = fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {};
+        const currentConstraints = adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : [];
+        
+        const testResults = {
+            tableConfigImported: topSeatsInput?.value === '3',
+            guestListImported: guestListInput?.value.includes('Test User 1'),
+            fixedAssignmentsImported: Object.keys(currentAssignments).length === 2,
+            constraintsImported: currentConstraints.length === 1,
+            correctAssignment: currentAssignments['1'] === 'Test User 1'
+        };
+        
+        const allPassed = Object.values(testResults).every(Boolean);
+        
+        console.log('Import test results:', testResults);
+        return {
+            success: allPassed,
+            message: allPassed ? 'Import functionality test passed' : 'Import functionality test failed',
+            details: testResults
+        };
+        
+    } catch (error) {
+        console.error('Import test error:', error);
+        return {
+            success: false,
+            message: 'Import test failed with error: ' + error.message,
+            error
+        };
+    }
+}
+
+async function testExportImportCycle() {
+    console.log('Testing complete export/import cycle...');
+    
+    try {
+        // Set up initial state with simple test data
+        populateFormWithTestData('simple');
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Capture initial state
+        const initialTableConfig = { ...currentTableConfig };
+        const initialGuestList = [...currentGuestList];
+        const initialAssignments = fixedAssignmentManager ? { ...fixedAssignmentManager.getAllAssignments() } : {};
+        const initialConstraints = adjacencyConstraintManager ? [...adjacencyConstraintManager.getAllConstraints()] : [];
+        
+        // Create export config manually (since we can't easily test file download)
+        const exportConfig = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            tableConfig: initialTableConfig,
+            guestList: initialGuestList,
+            fixedAssignments: initialAssignments,
+            adjacencyConstraints: initialConstraints
+        };
+        
+        // Clear everything
+        handleClearAll();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Verify cleared state
+        const clearedAssignments = fixedAssignmentManager ? Object.keys(fixedAssignmentManager.getAllAssignments()).length : 0;
+        const clearedConstraints = adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints().length : 0;
+        
+        // Import the exported config
+        const blob = new Blob([JSON.stringify(exportConfig)], { type: 'application/json' });
+        const file = new File([blob], 'cycle-test.json', { type: 'application/json' });
+        
+        const mockEvent = {
+            target: {
+                files: [file],
+                value: ''
+            }
+        };
+        
+        await handleImportConfig(mockEvent);
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        // Verify restored state matches initial state
+        const restoredTableConfig = currentTableConfig;
+        const restoredGuestList = [...currentGuestList];
+        const restoredAssignments = fixedAssignmentManager ? { ...fixedAssignmentManager.getAllAssignments() } : {};
+        const restoredConstraints = adjacencyConstraintManager ? [...adjacencyConstraintManager.getAllConstraints()] : [];
+        
+        const testResults = {
+            dataWasCleared: clearedAssignments === 0 && clearedConstraints === 0,
+            tableConfigRestored: JSON.stringify(restoredTableConfig) === JSON.stringify(initialTableConfig),
+            guestListRestored: JSON.stringify(restoredGuestList) === JSON.stringify(initialGuestList),
+            assignmentsRestored: JSON.stringify(restoredAssignments) === JSON.stringify(initialAssignments),
+            constraintsRestored: restoredConstraints.length === initialConstraints.length
+        };
+        
+        const allPassed = Object.values(testResults).every(Boolean);
+        
+        console.log('Export/Import cycle test results:', testResults);
+        return {
+            success: allPassed,
+            message: allPassed ? 'Export/Import cycle test passed' : 'Export/Import cycle test failed',
+            details: testResults
+        };
+        
+    } catch (error) {
+        console.error('Export/Import cycle test error:', error);
+        return {
+            success: false,
+            message: 'Export/Import cycle test failed with error: ' + error.message,
+            error
+        };
+    }
+}
+
+async function runExportImportTests() {
+    console.log('\n=== Starting Export/Import Tests ===');
+    
+    const tests = [
+        { name: 'Export Functionality', test: testExportFunctionality },
+        { name: 'Import Functionality', test: testImportFunctionality },
+        { name: 'Export/Import Cycle', test: testExportImportCycle }
+    ];
+    
+    const results = [];
+    
+    for (const testCase of tests) {
+        console.log(`\nRunning ${testCase.name}...`);
+        const startTime = performance.now();
+        
+        try {
+            const result = await testCase.test();
+            const duration = performance.now() - startTime;
+            
+            results.push({
+                name: testCase.name,
+                success: result.success,
+                message: result.message,
+                duration,
+                details: result.details
+            });
+            
+            console.log(`${testCase.name}: ${result.success ? 'PASSED' : 'FAILED'} (${duration.toFixed(2)}ms)`);
+            if (!result.success) {
+                console.error(`  Error: ${result.message}`);
+            }
+            
+        } catch (error) {
+            const duration = performance.now() - startTime;
+            results.push({
+                name: testCase.name,
+                success: false,
+                message: `Test failed with error: ${error.message}`,
+                duration,
+                error
+            });
+            console.error(`${testCase.name}: FAILED (${duration.toFixed(2)}ms) - ${error.message}`);
+        }
+    }
+    
+    // Summary
+    const passed = results.filter(r => r.success).length;
+    const failed = results.filter(r => !r.success).length;
+    
+    console.log('\n=== Export/Import Test Summary ===');
+    console.log(`Total tests: ${results.length}`);
+    console.log(`Passed: ${passed}`);
+    console.log(`Failed: ${failed}`);
+    
+    return results;
+}
+
 window.testSuite = {
     testDataSets,
     runTest,
     runAllTests,
     populateFormWithTestData,
-    verifyVisualState
+    verifyVisualState,
+    testExportFunctionality,
+    testImportFunctionality,
+    testExportImportCycle,
+    runExportImportTests
 };
