@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Random Dinner Table Seating Application",
   "scripts": {
-    "test": "node run-tests.js && node test-models.js && node test-validation.js",
+    "test": "node run-tests.js && node test-models.js && node test-validation.js && node test-table-renderer.js",
     "lint": "eslint scripts/**/*.js tests/**/*.js *.js",
     "lint:fix": "eslint scripts/**/*.js tests/**/*.js *.js --fix",
     "dev": "python -m http.server 8000",

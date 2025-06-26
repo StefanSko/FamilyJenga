@@ -62,6 +62,11 @@ module.exports = {
         'validateGuestCount': 'readonly',
         'findDuplicateGuests': 'readonly',
         
+        // Table renderer functions
+        'calculateSeatPositions': 'readonly',
+        'renderTable': 'readonly',
+        'updateSeatDisplay': 'readonly',
+        
         // App functions
         'initializeApp': 'readonly',
         'initializeTableConfigurationUI': 'readonly',
@@ -70,6 +75,9 @@ module.exports = {
         'updateTotalSeatsDisplay': 'readonly',
         'showValidationErrors': 'readonly',
         'clearValidationErrors': 'readonly',
-        'clearInputErrorStates': 'readonly'
+        'clearInputErrorStates': 'readonly',
+        'renderTableVisualization': 'readonly',
+        'clearTableVisualization': 'readonly',
+        'showTableRenderError': 'readonly'
     }
 };

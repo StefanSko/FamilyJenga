@@ -80,6 +80,8 @@ runner.test('CSS file exists in correct location', function() {
 runner.test('JavaScript files exist in correct location', function() {
     runner.assertFileExists('scripts/app.js');
     runner.assertFileExists('scripts/models.js');
+    runner.assertFileExists('scripts/validation.js');
+    runner.assertFileExists('scripts/tableRenderer.js');
 });
 
 runner.test('Test files exist', function() {
@@ -90,6 +92,7 @@ runner.test('Test files exist', function() {
     runner.assertFileExists('tests/models-tests.js');
     runner.assertFileExists('tests/validation-tests.js');
     runner.assertFileExists('tests/ui-tests.js');
+    runner.assertFileExists('tests/table-renderer-tests.js');
 });
 
 // Content validation tests
@@ -157,6 +160,13 @@ runner.test('CSS contains form styling', function() {
     runner.assertFileContains('styles/main.css', '.total-display', 'CSS should style total display');
     runner.assertFileContains('styles/main.css', '.validation-errors', 'CSS should style validation errors');
     runner.assertFileContains('styles/main.css', 'input[type="number"].error', 'CSS should have error state styling');
+});
+
+runner.test('CSS contains table visualization styling', function() {
+    runner.assertFileContains('styles/main.css', '.table-svg-container', 'CSS should style SVG container');
+    runner.assertFileContains('styles/main.css', '.seat-group', 'CSS should style seat groups');
+    runner.assertFileContains('styles/main.css', '.seat-circle', 'CSS should style seat circles');
+    runner.assertFileContains('styles/main.css', '.table-surface', 'CSS should style table surface');
 });
 
 // Run all tests

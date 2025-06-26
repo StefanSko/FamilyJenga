@@ -12,6 +12,8 @@ let currentGuestList = [];
 let currentConstraints = [];
 // eslint-disable-next-line no-unused-vars
 let currentSeatingArrangement = null;
+// eslint-disable-next-line no-unused-vars
+let currentSeatElements = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
@@ -142,6 +144,9 @@ function handleTableInputChange() {
         try {
             currentTableConfig = createTableConfig(topSeats, rightSeats, bottomSeats, leftSeats);
             console.log('Updated table configuration:', currentTableConfig);
+            
+            // Render the table whenever configuration changes
+            renderTableVisualization();
         } catch (error) {
             console.error('Error creating table config:', error);
         }
@@ -164,6 +169,53 @@ function handleTableInputChange() {
         }
         
         currentTableConfig = null;
+        
+        // Clear table visualization on invalid config
+        clearTableVisualization();
+    }
+}
+
+// Table Visualization Functions
+
+function renderTableVisualization() {
+    if (!currentTableConfig) {
+        console.warn('No valid table configuration to render');
+        return;
+    }
+    
+    const tableDisplay = document.getElementById('table-display');
+    if (!tableDisplay) {
+        console.error('Table display element not found');
+        return;
+    }
+    
+    try {
+        console.log('Rendering table visualization...');
+        currentSeatElements = renderTable(currentTableConfig, tableDisplay);
+        console.log('Table rendered successfully with', Object.keys(currentSeatElements).length, 'seats');
+    } catch (error) {
+        console.error('Error rendering table:', error);
+        showTableRenderError(error.message);
+    }
+}
+
+function clearTableVisualization() {
+    const tableDisplay = document.getElementById('table-display');
+    if (tableDisplay) {
+        tableDisplay.innerHTML = '';
+    }
+    currentSeatElements = null;
+}
+
+function showTableRenderError(errorMessage) {
+    const tableDisplay = document.getElementById('table-display');
+    if (tableDisplay) {
+        tableDisplay.innerHTML = `
+            <div class="table-error">
+                <p>Unable to render table</p>
+                <small>${errorMessage}</small>
+            </div>
+        `;
     }
 }
 
