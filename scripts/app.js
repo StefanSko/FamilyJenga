@@ -946,11 +946,33 @@ function displayGeneratedSeating(arrangement) {
 }
 
 function clearPreviousGeneratedAssignments() {
+    console.log('clearPreviousGeneratedAssignments called, currentSeatElements:', !!currentSeatElements);
+    
     if (!currentSeatElements) {
+        console.log('No currentSeatElements, trying to find seats in DOM');
+        // Fallback: find all seats in the current table display
+        const tableContainer = document.getElementById('table-display');
+        if (!tableContainer) {
+            console.log('No table container found');
+            return;
+        }
+        
+        const allSeats = tableContainer.querySelectorAll('.seat-group');
+        console.log('Found seats in DOM:', allSeats.length);
+        
+        allSeats.forEach(seatElement => {
+            if (seatElement.classList.contains('generated-assignment')) {
+                const seatId = seatElement.getAttribute('data-seat-id');
+                updateSeatDisplay(seatElement, null, false);
+                console.log('Cleared generated assignment from seat:', seatId);
+            }
+        });
         return;
     }
     
+    console.log('Using currentSeatElements, count:', Object.keys(currentSeatElements).length);
     Object.values(currentSeatElements).forEach(seatElement => {
+        console.log('Checking seat element:', seatElement.getAttribute('data-seat-id'), 'classes:', seatElement.className);
         // Only clear generated assignments, keep fixed ones
         if (seatElement.classList.contains('generated-assignment')) {
             const seatId = seatElement.getAttribute('data-seat-id');
