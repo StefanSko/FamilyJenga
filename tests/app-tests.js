@@ -52,7 +52,9 @@ TestFramework.test('Application modules structure', function() {
         config: {},
         guests: [],
         constraints: [],
-        initialize: function() { return true; }
+        initialize: function() {
+            return true; 
+        }
     };
     
     TestFramework.assertNotNull(mockApp.config, 'App should have config object');

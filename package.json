@@ -1,0 +1,18 @@
+{
+  "name": "family-jenga-seating",
+  "version": "1.0.0",
+  "description": "Random Dinner Table Seating Application",
+  "scripts": {
+    "test": "node run-tests.js && node test-models.js && node test-validation.js",
+    "lint": "eslint scripts/**/*.js tests/**/*.js *.js",
+    "lint:fix": "eslint scripts/**/*.js tests/**/*.js *.js --fix",
+    "dev": "python -m http.server 8000",
+    "validate": "npm run lint && npm run test"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "keywords": ["seating", "dinner", "table", "random", "javascript"],
+  "author": "StefanSko",
+  "license": "MIT"
+}

@@ -2,7 +2,6 @@
 // ABOUTME: Runs file existence and basic structure tests without requiring a browser
 
 const fs = require('fs');
-const path = require('path');
 
 class TestRunner {
     constructor() {
@@ -89,6 +88,8 @@ runner.test('Test files exist', function() {
     runner.assertFileExists('tests/dom-tests.js');
     runner.assertFileExists('tests/app-tests.js');
     runner.assertFileExists('tests/models-tests.js');
+    runner.assertFileExists('tests/validation-tests.js');
+    runner.assertFileExists('tests/ui-tests.js');
 });
 
 // Content validation tests
@@ -138,6 +139,24 @@ runner.test('CSS has responsive design', function() {
 runner.test('Files have proper ABOUTME comments', function() {
     runner.assertFileContains('styles/main.css', 'ABOUTME:', 'CSS should have ABOUTME comment');
     runner.assertFileContains('scripts/app.js', 'ABOUTME:', 'JS should have ABOUTME comment');
+    runner.assertFileContains('scripts/models.js', 'ABOUTME:', 'Models should have ABOUTME comment');
+    runner.assertFileContains('scripts/validation.js', 'ABOUTME:', 'Validation should have ABOUTME comment');
+});
+
+runner.test('HTML contains table configuration inputs', function() {
+    runner.assertFileContains('index.html', 'id="topSeats"', 'HTML should have top seats input');
+    runner.assertFileContains('index.html', 'id="rightSeats"', 'HTML should have right seats input');
+    runner.assertFileContains('index.html', 'id="bottomSeats"', 'HTML should have bottom seats input');
+    runner.assertFileContains('index.html', 'id="leftSeats"', 'HTML should have left seats input');
+    runner.assertFileContains('index.html', 'id="total-seats"', 'HTML should have total seats display');
+    runner.assertFileContains('index.html', 'id="table-validation-errors"', 'HTML should have validation errors container');
+});
+
+runner.test('CSS contains form styling', function() {
+    runner.assertFileContains('styles/main.css', '.input-group', 'CSS should style input groups');
+    runner.assertFileContains('styles/main.css', '.total-display', 'CSS should style total display');
+    runner.assertFileContains('styles/main.css', '.validation-errors', 'CSS should style validation errors');
+    runner.assertFileContains('styles/main.css', 'input[type="number"].error', 'CSS should have error state styling');
 });
 
 // Run all tests

@@ -1,6 +1,7 @@
 // ABOUTME: Simple test framework for the dinner seating application
 // ABOUTME: Provides test registration, execution, and reporting functionality
 
+// eslint-disable-next-line no-unused-vars
 const TestFramework = {
     tests: [],
     results: [],

@@ -4,7 +4,6 @@
 // Test HTML structure and basic DOM elements
 TestFramework.test('HTML document has correct title', function() {
     // We'll need to load the main page in an iframe or simulate it
-    const expectedTitle = 'Random Dinner Table Seating';
     TestFramework.assertTrue(true, 'This test needs iframe implementation');
 });
 
@@ -70,15 +69,6 @@ TestFramework.test('Generate button has correct styling classes', function() {
 });
 
 TestFramework.test('CSS responsive design breakpoints work', function() {
-    // Test that our CSS has responsive breakpoints
-    const styleSheetExists = Array.from(document.styleSheets).some(sheet => {
-        try {
-            return sheet.href && sheet.href.includes('main.css');
-        } catch (e) {
-            return false;
-        }
-    });
-    
     // Since we can't easily test media queries in this environment,
     // we'll just verify the stylesheet loads
     TestFramework.assertTrue(true, 'CSS responsive test placeholder - needs full page load');

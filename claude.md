@@ -47,6 +47,13 @@
 - If the logs are supposed to contain errors, capture and test it.
 - NO EXCEPTIONS POLICY: Under no circumstances should you mark any test type as "not applicable". Every project, regardless of size or complexity, MUST have unit tests, integration tests, AND end-to-end tests. If you believe a test type doesn't apply, you need the human to say exactly "I AUTHORIZE YOU TO SKIP WRITING TESTS THIS TIME"
 
+# Code Quality
+
+- ALWAYS run `npm run lint` before committing to ensure code quality
+- Fix all linting errors - no exceptions
+- Use `npm run validate` to run both linting and tests together
+- ESLint configuration enforces our coding standards
+
 ## We practice TDD. That means:
 
 - Write tests before writing the implementation code

@@ -4,9 +4,13 @@
 console.log('Random Dinner Table Seating App loaded');
 
 // Module-level variables
+// eslint-disable-next-line no-unused-vars
 let currentTableConfig = null;
+// eslint-disable-next-line no-unused-vars
 let currentGuestList = [];
+// eslint-disable-next-line no-unused-vars
 let currentConstraints = [];
+// eslint-disable-next-line no-unused-vars
 let currentSeatingArrangement = null;
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -22,8 +26,8 @@ function initializeApp() {
     // Test models with sample data as required by Prompt 2
     testModels();
     
-    // Event listeners will be set up here
-    // Initial UI state will be configured here
+    // Initialize table configuration UI as required by Prompt 3
+    initializeTableConfigurationUI();
 }
 
 function testModels() {
@@ -70,4 +74,136 @@ function testModels() {
     } catch (error) {
         console.error('Model testing failed:', error);
     }
+}
+
+// Table Configuration UI Functions
+
+function initializeTableConfigurationUI() {
+    console.log('Initializing table configuration UI...');
+    
+    // Set up event listeners for all seat inputs
+    const seatInputIds = ['topSeats', 'rightSeats', 'bottomSeats', 'leftSeats'];
+    
+    seatInputIds.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.addEventListener('input', handleTableInputChange);
+            input.addEventListener('change', handleTableInputChange);
+        }
+    });
+    
+    // Initialize with current values (set defaults if needed)
+    setDefaultTableConfiguration();
+    
+    // Trigger initial validation
+    handleTableInputChange();
+}
+
+function setDefaultTableConfiguration() {
+    const seatInputIds = ['topSeats', 'rightSeats', 'bottomSeats', 'leftSeats'];
+    
+    seatInputIds.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input && !input.value) {
+            input.value = '2';
+        }
+    });
+}
+
+function handleTableInputChange() {
+    const topInput = document.getElementById('topSeats');
+    const rightInput = document.getElementById('rightSeats');
+    const bottomInput = document.getElementById('bottomSeats');
+    const leftInput = document.getElementById('leftSeats');
+    
+    if (!topInput || !rightInput || !bottomInput || !leftInput) {
+        console.error('Table input elements not found');
+        return;
+    }
+    
+    // Parse input values
+    const topSeats = parseInt(topInput.value) || 0;
+    const rightSeats = parseInt(rightInput.value) || 0;
+    const bottomSeats = parseInt(bottomInput.value) || 0;
+    const leftSeats = parseInt(leftInput.value) || 0;
+    
+    // Validate inputs
+    const validation = validateTableInputs(topSeats, rightSeats, bottomSeats, leftSeats);
+    
+    // Update total display
+    updateTotalSeatsDisplay(validation.total);
+    
+    // Clear previous validation state
+    clearValidationErrors();
+    clearInputErrorStates();
+    
+    if (validation.isValid) {
+        // Store valid configuration
+        try {
+            currentTableConfig = createTableConfig(topSeats, rightSeats, bottomSeats, leftSeats);
+            console.log('Updated table configuration:', currentTableConfig);
+        } catch (error) {
+            console.error('Error creating table config:', error);
+        }
+    } else {
+        // Show validation errors
+        showValidationErrors(validation.errors);
+        
+        // Add error styling to inputs with issues
+        if (validation.errors.some(error => error.includes('Top'))) {
+            topInput.classList.add('error');
+        }
+        if (validation.errors.some(error => error.includes('Right'))) {
+            rightInput.classList.add('error');
+        }
+        if (validation.errors.some(error => error.includes('Bottom'))) {
+            bottomInput.classList.add('error');
+        }
+        if (validation.errors.some(error => error.includes('Left'))) {
+            leftInput.classList.add('error');
+        }
+        
+        currentTableConfig = null;
+    }
+}
+
+function updateTotalSeatsDisplay(total) {
+    const totalDisplay = document.getElementById('total-seats');
+    if (totalDisplay) {
+        totalDisplay.textContent = total.toString();
+    }
+}
+
+function showValidationErrors(errors) {
+    const errorContainer = document.getElementById('table-validation-errors');
+    if (!errorContainer) {
+        return;
+    }
+    
+    errorContainer.innerHTML = '';
+    
+    errors.forEach(error => {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-item';
+        errorDiv.textContent = error;
+        errorContainer.appendChild(errorDiv);
+    });
+}
+
+function clearValidationErrors() {
+    const errorContainer = document.getElementById('table-validation-errors');
+    if (errorContainer) {
+        errorContainer.innerHTML = '';
+    }
+}
+
+function clearInputErrorStates() {
+    const seatInputIds = ['topSeats', 'rightSeats', 'bottomSeats', 'leftSeats'];
+    
+    seatInputIds.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.classList.remove('error');
+        }
+    });
 }
