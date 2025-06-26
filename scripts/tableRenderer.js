@@ -376,6 +376,12 @@ function addGuestNameLabel(seatElement, guestName, isFixed) {
     nameLabel.className = 'guest-name-label';
     nameLabel.textContent = displayName;
     
+    // Add rotation for top and bottom seats to prevent overlap
+    if (seatSide === 'top' || seatSide === 'bottom') {
+        const rotation = seatSide === 'top' ? -90 : 90;
+        nameLabel.setAttribute('transform', `rotate(${rotation} ${labelPosition.x} ${labelPosition.y})`);
+    }
+    
     // Ensure visibility (override any CSS opacity issues)
     nameLabel.style.opacity = '1';
     
