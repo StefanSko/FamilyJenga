@@ -78,8 +78,9 @@ runner.test('CSS file exists in correct location', function() {
     runner.assertFileExists('styles/main.css');
 });
 
-runner.test('JavaScript file exists in correct location', function() {
+runner.test('JavaScript files exist in correct location', function() {
     runner.assertFileExists('scripts/app.js');
+    runner.assertFileExists('scripts/models.js');
 });
 
 runner.test('Test files exist', function() {
@@ -87,6 +88,7 @@ runner.test('Test files exist', function() {
     runner.assertFileExists('tests/test-framework.js');
     runner.assertFileExists('tests/dom-tests.js');
     runner.assertFileExists('tests/app-tests.js');
+    runner.assertFileExists('tests/models-tests.js');
 });
 
 // Content validation tests
@@ -109,6 +111,17 @@ runner.test('JavaScript contains initialization', function() {
     runner.assertFileContains('scripts/app.js', 'DOMContentLoaded', 'JS should listen for DOM ready');
     runner.assertFileContains('scripts/app.js', 'console.log', 'JS should have logging');
     runner.assertFileContains('scripts/app.js', 'initializeApp', 'JS should have initialization function');
+    runner.assertFileContains('scripts/app.js', 'testModels', 'JS should test models');
+});
+
+runner.test('Models.js contains required functions', function() {
+    runner.assertFileContains('scripts/models.js', 'createTableConfig', 'Models should have table config factory');
+    runner.assertFileContains('scripts/models.js', 'createSeat', 'Models should have seat factory');
+    runner.assertFileContains('scripts/models.js', 'parseGuestList', 'Models should have guest list parser');
+    runner.assertFileContains('scripts/models.js', 'validateGuestList', 'Models should have guest list validator');
+    runner.assertFileContains('scripts/models.js', 'createFixedAssignment', 'Models should have fixed assignment factory');
+    runner.assertFileContains('scripts/models.js', 'createAdjacencyConstraint', 'Models should have adjacency constraint factory');
+    runner.assertFileContains('scripts/models.js', 'createSeatingArrangement', 'Models should have seating arrangement factory');
 });
 
 runner.test('HTML has semantic structure', function() {
