@@ -234,16 +234,20 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
     }
     
     if (guestName) {
-        // Show guest initials in the circle
-        const initials = getGuestInitials(guestName);
-        seatText.textContent = initials;
+        // Keep seat number in circle for clarity and scalability
+        const seatId = seatElement.getAttribute('data-seat-id');
+        seatText.textContent = seatId;
         seatElement.classList.add('occupied');
         
         // Update seat appearance for occupied state
         const seatCircle = seatElement.querySelector('.seat-circle');
         if (seatCircle) {
             seatText.setAttribute('fill', 'white');
-            seatText.setAttribute('font-size', '12');
+            
+            // Dynamic font sizing based on seat count for scalability
+            const totalSeats = getTotalSeatsFromTable(seatElement);
+            const fontSize = totalSeats > 20 ? '10' : '12';
+            seatText.setAttribute('font-size', fontSize);
             seatText.setAttribute('font-weight', '700');
             
             if (isFixed) {
@@ -282,16 +286,16 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
     }
 }
 
-// Helper function to get guest initials
-function getGuestInitials(guestName) {
-    return guestName
-        .split(' ')
-        .map(name => name.charAt(0).toUpperCase())
-        .slice(0, 2) // Take first 2 initials maximum
-        .join('');
+// Helper function to get total seat count for dynamic scaling
+function getTotalSeatsFromTable(seatElement) {
+    const svg = seatElement.closest('svg');
+    if (!svg) return 8; // Default fallback
+    
+    const allSeats = svg.querySelectorAll('.seat-group');
+    return allSeats.length;
 }
 
-// Helper function to add guest name label
+// Helper function to add guest name label with scalability features
 function addGuestNameLabel(seatElement, guestName, isFixed) {
     const seatCircle = seatElement.querySelector('.seat-circle');
     if (!seatCircle) return;
@@ -299,9 +303,13 @@ function addGuestNameLabel(seatElement, guestName, isFixed) {
     const cx = parseFloat(seatCircle.getAttribute('cx'));
     const cy = parseFloat(seatCircle.getAttribute('cy'));
     const seatSide = seatElement.getAttribute('data-side');
+    const totalSeats = getTotalSeatsFromTable(seatElement);
     
-    // Calculate label position based on seat side
-    const labelPosition = calculateLabelPosition(cx, cy, seatSide);
+    // Calculate label position with dynamic spacing for scalability
+    const labelPosition = calculateLabelPosition(cx, cy, seatSide, totalSeats);
+    
+    // Truncate very long names for readability in larger tables
+    const displayName = truncateNameForDisplay(guestName, totalSeats);
     
     // Create guest name label
     const nameLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -310,7 +318,10 @@ function addGuestNameLabel(seatElement, guestName, isFixed) {
     nameLabel.setAttribute('text-anchor', labelPosition.anchor);
     nameLabel.setAttribute('dominant-baseline', labelPosition.baseline);
     nameLabel.setAttribute('font-family', '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif');
-    nameLabel.setAttribute('font-size', '12');
+    
+    // Dynamic font sizing based on table size
+    const fontSize = totalSeats > 30 ? '10' : totalSeats > 20 ? '11' : '12';
+    nameLabel.setAttribute('font-size', fontSize);
     nameLabel.setAttribute('font-weight', '600');
     nameLabel.style.userSelect = 'none';
     nameLabel.style.pointerEvents = 'none';
@@ -325,14 +336,40 @@ function addGuestNameLabel(seatElement, guestName, isFixed) {
     }
     
     nameLabel.className = 'guest-name-label';
-    nameLabel.textContent = guestName;
+    nameLabel.textContent = displayName;
+    
+    // Add title attribute for full name on hover (especially useful for truncated names)
+    nameLabel.innerHTML = `<title>${guestName}</title>`;
+    nameLabel.textContent = displayName;
     
     seatElement.appendChild(nameLabel);
 }
 
-// Helper function to calculate label position
-function calculateLabelPosition(cx, cy, seatSide) {
-    const offset = 25; // Distance from circle center
+// Helper function to truncate names intelligently for display
+function truncateNameForDisplay(guestName, totalSeats) {
+    if (totalSeats <= 20) {
+        // For smaller tables, show full names
+        return guestName;
+    } else if (totalSeats <= 30) {
+        // For medium tables, limit to 15 characters
+        return guestName.length > 15 ? guestName.substring(0, 12) + '...' : guestName;
+    } else {
+        // For large tables, limit to 12 characters
+        return guestName.length > 12 ? guestName.substring(0, 9) + '...' : guestName;
+    }
+}
+
+// Helper function to calculate label position with dynamic spacing
+function calculateLabelPosition(cx, cy, seatSide, totalSeats) {
+    // Dynamic offset based on table size to prevent label collisions
+    let offset;
+    if (totalSeats > 30) {
+        offset = 20; // Closer spacing for large tables
+    } else if (totalSeats > 20) {
+        offset = 22; // Medium spacing for medium tables
+    } else {
+        offset = 25; // Generous spacing for small tables
+    }
     
     switch (seatSide) {
     case 'top':

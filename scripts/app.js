@@ -1232,25 +1232,45 @@ function updateGenerateButtonState(isValid) {
 function handleClearAll() {
     console.log('Clear All button clicked');
     
-    // Reset table configuration
-    document.getElementById('top-seats').value = '2';
-    document.getElementById('right-seats').value = '2';
-    document.getElementById('bottom-seats').value = '2';
-    document.getElementById('left-seats').value = '2';
+    // Reset table configuration (using correct camelCase IDs) with defensive checks
+    const topSeats = document.getElementById('topSeats');
+    const rightSeats = document.getElementById('rightSeats');
+    const bottomSeats = document.getElementById('bottomSeats');
+    const leftSeats = document.getElementById('leftSeats');
+    
+    if (!topSeats || !rightSeats || !bottomSeats || !leftSeats) {
+        console.error('Clear All: Cannot find seat input elements', {
+            topSeats: !!topSeats,
+            rightSeats: !!rightSeats, 
+            bottomSeats: !!bottomSeats,
+            leftSeats: !!leftSeats
+        });
+        return;
+    }
+    
+    topSeats.value = '2';
+    rightSeats.value = '2';
+    bottomSeats.value = '2';
+    leftSeats.value = '2';
     
     // Trigger table configuration update
-    ['top-seats', 'right-seats', 'bottom-seats', 'left-seats'].forEach(id => {
-        document.getElementById(id).dispatchEvent(new Event('input'));
+    [topSeats, rightSeats, bottomSeats, leftSeats].forEach(element => {
+        element.dispatchEvent(new Event('input'));
     });
     
     // Clear guest list
-    document.getElementById('guest-list-input').value = '';
-    document.getElementById('guest-list-input').dispatchEvent(new Event('input'));
+    const guestListInput = document.getElementById('guest-list-input');
+    if (guestListInput) {
+        guestListInput.value = '';
+        guestListInput.dispatchEvent(new Event('input'));
+    } else {
+        console.error('Clear All: Cannot find guest-list-input element');
+    }
     
     // Clear all fixed assignments
     if (fixedAssignmentManager) {
         const allAssignments = fixedAssignmentManager.getAllAssignments();
-        allAssignments.forEach((guest, seatId) => {
+        Object.entries(allAssignments).forEach(([seatId, guest]) => {
             handleRemoveAssignment(seatId);
         });
     }
