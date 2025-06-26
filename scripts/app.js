@@ -20,6 +20,8 @@ let currentAssignedGuests = [];
 let fixedAssignmentManager = null;
 // eslint-disable-next-line no-unused-vars
 let currentAdjacencyMap = null;
+// eslint-disable-next-line no-unused-vars
+let errorDisplay = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
@@ -30,6 +32,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
     console.log('Application initialized successfully');
+    
+    // Initialize error display system as required by Prompt 13
+    // eslint-disable-next-line no-undef
+    errorDisplay = new ErrorDisplay();
     
     // Initialize fixed assignment manager as required by Prompt 7
     // eslint-disable-next-line no-undef
@@ -185,18 +191,7 @@ function handleTableInputChange() {
         showValidationErrors(validation.errors);
         
         // Add error styling to inputs with issues
-        if (validation.errors.some(error => error.includes('Top'))) {
-            topInput.classList.add('error');
-        }
-        if (validation.errors.some(error => error.includes('Right'))) {
-            rightInput.classList.add('error');
-        }
-        if (validation.errors.some(error => error.includes('Bottom'))) {
-            bottomInput.classList.add('error');
-        }
-        if (validation.errors.some(error => error.includes('Left'))) {
-            leftInput.classList.add('error');
-        }
+        setInputErrorStates(validation.errors);
         
         currentTableConfig = null;
         
@@ -372,34 +367,49 @@ function updateGuestCountDisplay(count) {
 
 function showGuestValidationErrors(errors) {
     const errorContainer = document.getElementById('guest-validation-errors');
-    if (!errorContainer) {
+    if (!errorContainer || !errorDisplay) {
         return;
     }
     
-    errorContainer.innerHTML = '';
+    // Clear previous errors
+    errorDisplay.clearError(errorContainer);
     
+    // Show each error with appropriate type and suggestions
     errors.forEach(error => {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-item';
-        errorDiv.textContent = error;
-        errorContainer.appendChild(errorDiv);
+        const errorType = determineErrorType(error);
+        let enhancedMessage = error;
+        
+        // Add suggestions for common guest list errors
+        if (error.includes('duplicate') || error.includes('Duplicate')) {
+            // eslint-disable-next-line no-undef
+            enhancedMessage = createDetailedErrorMessage(error, 'duplicate_guests');
+        } else if (error.includes('too many') || error.includes('Too many')) {
+            // eslint-disable-next-line no-undef
+            enhancedMessage = createDetailedErrorMessage(error, 'guest_count_mismatch');
+        }
+        
+        errorDisplay.showError(enhancedMessage, errorType, errorContainer);
     });
 }
 
 function clearGuestValidationErrors() {
     const errorContainer = document.getElementById('guest-validation-errors');
-    if (errorContainer) {
-        errorContainer.innerHTML = '';
+    if (errorContainer && errorDisplay) {
+        errorDisplay.clearError(errorContainer);
     }
 }
 
 function updateGuestListValidationState(isValid) {
     const guestInput = document.getElementById('guest-list-input');
     if (guestInput) {
+        // Remove all validation state classes
+        guestInput.classList.remove('error', 'input-error', 'input-success', 'input-warning');
+        
+        // Add appropriate state class
         if (isValid) {
-            guestInput.classList.remove('error');
+            guestInput.classList.add('input-success');
         } else {
-            guestInput.classList.add('error');
+            guestInput.classList.add('input-error');
         }
     }
 }
@@ -411,27 +421,40 @@ function updateTotalSeatsDisplay(total) {
     }
 }
 
+// Enhanced Error Handling Functions (Prompt 13)
+
 function showValidationErrors(errors) {
     const errorContainer = document.getElementById('table-validation-errors');
-    if (!errorContainer) {
+    if (!errorContainer || !errorDisplay) {
         return;
     }
     
-    errorContainer.innerHTML = '';
+    // Clear previous errors
+    errorDisplay.clearError(errorContainer);
     
+    // Show each error with appropriate type
     errors.forEach(error => {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'error-item';
-        errorDiv.textContent = error;
-        errorContainer.appendChild(errorDiv);
+        const errorType = determineErrorType(error);
+        errorDisplay.showError(error, errorType, errorContainer);
     });
 }
 
 function clearValidationErrors() {
     const errorContainer = document.getElementById('table-validation-errors');
-    if (errorContainer) {
-        errorContainer.innerHTML = '';
+    if (errorContainer && errorDisplay) {
+        errorDisplay.clearError(errorContainer);
     }
+}
+
+function determineErrorType(errorMessage) {
+    // Determine error type based on message content
+    if (errorMessage.includes('warning') || errorMessage.includes('may')) {
+        return 'validation';
+    }
+    if (errorMessage.includes('required') || errorMessage.includes('must')) {
+        return 'error';
+    }
+    return 'validation';
 }
 
 function clearInputErrorStates() {
@@ -440,7 +463,26 @@ function clearInputErrorStates() {
     seatInputIds.forEach(inputId => {
         const input = document.getElementById(inputId);
         if (input) {
-            input.classList.remove('error');
+            input.classList.remove('error', 'input-error', 'input-success', 'input-warning');
+        }
+    });
+}
+
+function setInputErrorStates(errors) {
+    const seatInputIds = ['topSeats', 'rightSeats', 'bottomSeats', 'leftSeats'];
+    
+    seatInputIds.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            const hasError = errors.some(error => 
+                error.toLowerCase().includes(inputId.toLowerCase().replace('seats', ''))
+            );
+            
+            if (hasError) {
+                input.classList.add('input-error');
+            } else {
+                input.classList.add('input-success');
+            }
         }
     });
 }
@@ -811,11 +853,9 @@ function handleGenerateSeating() {
     // Clear previous status messages
     clearStatusMessages();
     
-    // Validate all inputs first
-    const validation = validateAllInputsForGeneration();
-    if (!validation.isValid) {
-        showGenerationError(validation.error, []);
-        return;
+    // Use comprehensive validation summary
+    if (!showValidationSummary()) {
+        return; // Validation summary will show the issues
     }
     
     // Show loading state
@@ -866,32 +906,7 @@ function handleGenerateSeating() {
     }
 }
 
-function validateAllInputsForGeneration() {
-    // Check guest list
-    if (!currentGuestList || currentGuestList.length === 0) {
-        return { isValid: false, error: 'Please enter at least one guest name' };
-    }
-    
-    // Check table configuration
-    if (!currentTableConfig || currentTableConfig.totalSeats === 0) {
-        return { isValid: false, error: 'Please configure the table with at least one seat' };
-    }
-    
-    // Check guest count vs seat count
-    if (currentGuestList.length > currentTableConfig.totalSeats) {
-        return { 
-            isValid: false, 
-            error: `Too many guests (${currentGuestList.length}) for available seats (${currentTableConfig.totalSeats})` 
-        };
-    }
-    
-    // Check adjacency map
-    if (!currentAdjacencyMap) {
-        return { isValid: false, error: 'Table adjacency data is not available' };
-    }
-    
-    return { isValid: true };
-}
+// Function removed - replaced by showValidationSummary
 
 function displayGeneratedSeating(arrangement) {
     console.log('Displaying generated seating arrangement:', arrangement);
@@ -1019,6 +1034,114 @@ function clearStatusMessages() {
     if (statusContainer) {
         statusContainer.innerHTML = '';
     }
+}
+
+// Comprehensive Validation Summary (Prompt 13)
+
+function showValidationSummary() {
+    const validationResult = gatherAllValidationIssues();
+    
+    if (!validationResult.isValid) {
+        // Show summary of all issues
+        const summaryContainer = document.getElementById('status-messages');
+        if (summaryContainer && errorDisplay) {
+            const summaryMessage = formatValidationSummary(validationResult);
+            errorDisplay.showError(summaryMessage, 'validation', summaryContainer);
+        }
+        
+        return false; // Prevent generation
+    }
+    
+    return true; // Allow generation
+}
+
+function gatherAllValidationIssues() {
+    const issues = [];
+    let hasErrors = false;
+    
+    // Check table configuration
+    if (!currentTableConfig) {
+        issues.push({ field: 'table', message: 'Table configuration is incomplete', type: 'error' });
+        hasErrors = true;
+    }
+    
+    // Check guest list
+    if (!currentGuestList || currentGuestList.length === 0) {
+        issues.push({ field: 'guests', message: 'Guest list is empty', type: 'error' });
+        hasErrors = true;
+    } else if (currentTableConfig && currentGuestList.length > currentTableConfig.totalSeats) {
+        issues.push({ 
+            field: 'guests', 
+            message: `Too many guests (${currentGuestList.length}) for available seats (${currentTableConfig.totalSeats})`, 
+            type: 'error' 
+        });
+        hasErrors = true;
+    }
+    
+    // Check adjacency map
+    if (!currentAdjacencyMap) {
+        issues.push({ field: 'adjacency', message: 'Table adjacency data is missing', type: 'error' });
+        hasErrors = true;
+    }
+    
+    // Check constraint feasibility
+    if (adjacencyConstraintManager && fixedAssignmentManager && currentAdjacencyMap) {
+        try {
+            const constraints = adjacencyConstraintManager.getAllConstraints();
+            const fixed = fixedAssignmentManager.getAllAssignments();
+            
+            // eslint-disable-next-line no-undef
+            const constraintValidation = validateAllConstraints(
+                currentGuestList, 
+                currentTableConfig, 
+                fixed, 
+                constraints, 
+                currentAdjacencyMap
+            );
+            
+            if (!constraintValidation.isValid) {
+                constraintValidation.errors.forEach(error => {
+                    issues.push({ field: 'constraints', message: error, type: 'error' });
+                    hasErrors = true;
+                });
+            }
+            
+            constraintValidation.warnings.forEach(warning => {
+                issues.push({ field: 'constraints', message: warning, type: 'validation' });
+            });
+            
+        } catch (error) {
+            issues.push({ field: 'constraints', message: 'Error validating constraints', type: 'error' });
+            hasErrors = true;
+        }
+    }
+    
+    // eslint-disable-next-line no-undef
+    return createErrorResult(!hasErrors, issues);
+}
+
+function formatValidationSummary(validationResult) {
+    let message = 'Configuration Issues Found:\n\n';
+    
+    const errorsByField = {};
+    validationResult.errors.forEach(error => {
+        if (!errorsByField[error.field]) {
+            errorsByField[error.field] = [];
+        }
+        errorsByField[error.field].push(error.message);
+    });
+    
+    Object.entries(errorsByField).forEach(([field, messages]) => {
+        message += `${field.charAt(0).toUpperCase() + field.slice(1)}:\n`;
+        messages.forEach(msg => {
+            message += `• ${msg}\n`;
+        });
+        message += '\n';
+    });
+    
+    message += 'Please resolve these issues before generating seating arrangements.';
+    
+    return message;
 }
 
 function showConstraintValidationErrors(errors) {
