@@ -6,10 +6,13 @@ function calculateSeatPositions(tableConfig) {
     const positions = [];
     
     // Table dimensions (will be scaled to fit container)
-    const tableWidth = 400;
-    const tableHeight = 300;
+    // Reduced table size so guest names appear on white background for better contrast
+    const tableWidth = 320;
+    const tableHeight = 240;
     const seatSize = 30;
-    const margin = 40;
+    // Table position (centered in 520x420 viewBox)
+    const tableX = 100;
+    const tableY = 90;
     
     let currentSeatId = 1;
     
@@ -18,13 +21,13 @@ function calculateSeatPositions(tableConfig) {
         const spacing = topSeats > 1 ? tableWidth / (topSeats - 1) : 0;
         for (let i = 0; i < topSeats; i++) {
             const x = topSeats > 1 ? i * spacing : tableWidth / 2;
-            const y = margin - seatSize / 2;
+            const y = tableY - seatSize / 2;
             
             positions.push({
                 seatId: currentSeatId++,
                 side: 'top',
                 position: i,
-                x: x + margin,
+                x: x + tableX,
                 y: y
             });
         }
@@ -34,7 +37,7 @@ function calculateSeatPositions(tableConfig) {
     if (rightSeats > 0) {
         const spacing = rightSeats > 1 ? tableHeight / (rightSeats - 1) : 0;
         for (let i = 0; i < rightSeats; i++) {
-            const x = margin + tableWidth + seatSize / 2;
+            const x = tableX + tableWidth + seatSize / 2;
             const y = rightSeats > 1 ? i * spacing : tableHeight / 2;
             
             positions.push({
@@ -42,7 +45,7 @@ function calculateSeatPositions(tableConfig) {
                 side: 'right',
                 position: i,
                 x: x,
-                y: y + margin
+                y: y + tableY
             });
         }
     }
@@ -52,13 +55,13 @@ function calculateSeatPositions(tableConfig) {
         const spacing = bottomSeats > 1 ? tableWidth / (bottomSeats - 1) : 0;
         for (let i = 0; i < bottomSeats; i++) {
             const x = bottomSeats > 1 ? (bottomSeats - 1 - i) * spacing : tableWidth / 2;
-            const y = margin + tableHeight + seatSize / 2;
+            const y = tableY + tableHeight + seatSize / 2;
             
             positions.push({
                 seatId: currentSeatId++,
                 side: 'bottom',
                 position: i,
-                x: x + margin,
+                x: x + tableX,
                 y: y
             });
         }
@@ -68,7 +71,7 @@ function calculateSeatPositions(tableConfig) {
     if (leftSeats > 0) {
         const spacing = leftSeats > 1 ? tableHeight / (leftSeats - 1) : 0;
         for (let i = 0; i < leftSeats; i++) {
-            const x = margin - seatSize / 2;
+            const x = tableX - seatSize / 2;
             const y = leftSeats > 1 ? (leftSeats - 1 - i) * spacing : tableHeight / 2;
             
             positions.push({
@@ -76,7 +79,7 @@ function calculateSeatPositions(tableConfig) {
                 side: 'left',
                 position: i,
                 x: x,
-                y: y + margin
+                y: y + tableY
             });
         }
     }
@@ -133,10 +136,11 @@ function renderTable(tableConfig, containerElement) {
     
     // Create table surface
     const tableRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    tableRect.setAttribute('x', '40');
-    tableRect.setAttribute('y', '40');
-    tableRect.setAttribute('width', '400');
-    tableRect.setAttribute('height', '300');
+    // Center the table in the SVG viewBox (520x420)
+    tableRect.setAttribute('x', '100');
+    tableRect.setAttribute('y', '90');
+    tableRect.setAttribute('width', '320');
+    tableRect.setAttribute('height', '240');
     tableRect.setAttribute('rx', '10');
     tableRect.setAttribute('ry', '10');
     // Try gradient first, fallback to solid color
@@ -207,6 +211,8 @@ function renderTable(tableConfig, containerElement) {
 
 // Function to update seat display (for later use with assignments)
 function updateSeatDisplay(seatElement, guestName, isFixed) {
+    console.log('updateSeatDisplay called:', { guestName, isFixed, seatElement });
+    
     if (!seatElement) {
         console.error('updateSeatDisplay: seatElement is null');
         return;
@@ -240,7 +246,10 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         seatElement.classList.add('occupied');
         
         // Update seat appearance for occupied state
-        const seatCircle = seatElement.querySelector('.seat-circle');
+        let seatCircle = seatElement.querySelector('.seat-circle');
+        if (!seatCircle) {
+            seatCircle = seatElement.querySelector('circle');
+        }
         if (seatCircle) {
             seatText.setAttribute('fill', 'white');
             
@@ -275,7 +284,10 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         seatText.setAttribute('font-weight', '600');
         
         // Reset seat circle to default
-        const seatCircle = seatElement.querySelector('.seat-circle');
+        let seatCircle = seatElement.querySelector('.seat-circle');
+        if (!seatCircle) {
+            seatCircle = seatElement.querySelector('circle');
+        }
         if (seatCircle) {
             seatCircle.setAttribute('fill', '#ecf0f1');
             seatCircle.setAttribute('stroke', '#34495e');
@@ -297,16 +309,34 @@ function getTotalSeatsFromTable(seatElement) {
 
 // Helper function to add guest name label with scalability features
 function addGuestNameLabel(seatElement, guestName, isFixed) {
-    const seatCircle = seatElement.querySelector('.seat-circle');
-    if (!seatCircle) return;
+    console.log('addGuestNameLabel called:', { guestName, isFixed });
+    
+    // Try multiple ways to find the seat circle
+    let seatCircle = seatElement.querySelector('.seat-circle');
+    if (!seatCircle) {
+        // Fallback: find circle element directly
+        seatCircle = seatElement.querySelector('circle');
+    }
+    
+    if (!seatCircle) {
+        console.error('addGuestNameLabel: No seat circle found, checking seatElement:', seatElement);
+        console.error('seatElement children:', seatElement.children);
+        return;
+    }
+    
+    console.log('Found seat circle:', seatCircle);
     
     const cx = parseFloat(seatCircle.getAttribute('cx'));
     const cy = parseFloat(seatCircle.getAttribute('cy'));
     const seatSide = seatElement.getAttribute('data-side');
     const totalSeats = getTotalSeatsFromTable(seatElement);
     
+    console.log('Seat position data:', { cx, cy, seatSide, totalSeats });
+    
     // Calculate label position with dynamic spacing for scalability
     const labelPosition = calculateLabelPosition(cx, cy, seatSide, totalSeats);
+    
+    console.log('Calculated label position:', labelPosition);
     
     // Truncate very long names for readability in larger tables
     const displayName = truncateNameForDisplay(guestName, totalSeats);
@@ -338,11 +368,18 @@ function addGuestNameLabel(seatElement, guestName, isFixed) {
     nameLabel.className = 'guest-name-label';
     nameLabel.textContent = displayName;
     
-    // Add title attribute for full name on hover (especially useful for truncated names)
-    nameLabel.innerHTML = `<title>${guestName}</title>`;
-    nameLabel.textContent = displayName;
+    // Ensure visibility (override any CSS opacity issues)
+    nameLabel.style.opacity = '1';
+    
+    // Add title element for full name on hover (especially useful for truncated names)
+    if (displayName !== guestName) {
+        const titleElement = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        titleElement.textContent = guestName;
+        nameLabel.appendChild(titleElement);
+    }
     
     seatElement.appendChild(nameLabel);
+    console.log('Guest name label added successfully:', displayName, 'at position:', labelPosition);
 }
 
 // Helper function to truncate names intelligently for display
@@ -371,43 +408,47 @@ function calculateLabelPosition(cx, cy, seatSide, totalSeats) {
         offset = 25; // Generous spacing for small tables
     }
     
+    let x, y, anchor, baseline;
+    
     switch (seatSide) {
     case 'top':
-        return {
-            x: cx,
-            y: cy - offset,
-            anchor: 'middle',
-            baseline: 'text-after-edge'
-        };
+        x = cx;
+        y = Math.max(15, cy - offset); // Prevent going above SVG bounds
+        anchor = 'middle';
+        baseline = 'text-after-edge';
+        break;
     case 'bottom':
-        return {
-            x: cx,
-            y: cy + offset,
-            anchor: 'middle',
-            baseline: 'text-before-edge'
-        };
+        x = cx;
+        y = cy + offset;
+        anchor = 'middle';
+        baseline = 'text-before-edge';
+        break;
     case 'left':
-        return {
-            x: cx - offset,
-            y: cy,
-            anchor: 'end',
-            baseline: 'central'
-        };
+        // For seats very close to left edge, put label on the right side instead
+        if (cx - offset < 60) {
+            x = cx + offset;
+            anchor = 'start';
+        } else {
+            x = cx - offset;
+            anchor = 'end';
+        }
+        y = cy;
+        baseline = 'central';
+        break;
     case 'right':
-        return {
-            x: cx + offset,
-            y: cy,
-            anchor: 'start',
-            baseline: 'central'
-        };
+        x = cx + offset;
+        y = cy;
+        anchor = 'start';
+        baseline = 'central';
+        break;
     default:
-        return {
-            x: cx,
-            y: cy + offset,
-            anchor: 'middle',
-            baseline: 'text-before-edge'
-        };
+        x = cx;
+        y = cy + offset;
+        anchor = 'middle';
+        baseline = 'text-before-edge';
     }
+    
+    return { x, y, anchor, baseline };
 }
 
 // Helper functions for remove button functionality
