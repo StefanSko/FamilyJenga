@@ -1412,18 +1412,34 @@ function handleImportConfig(event) {
             if (config.tableConfig) {
                 const { topSeats, rightSeats, bottomSeats, leftSeats } = config.tableConfig;
                 
+                console.log('Importing table config:', { topSeats, rightSeats, bottomSeats, leftSeats });
+                
                 const topSeatsInput = document.getElementById('topSeats');
                 const rightSeatsInput = document.getElementById('rightSeats');
                 const bottomSeatsInput = document.getElementById('bottomSeats');
                 const leftSeatsInput = document.getElementById('leftSeats');
                 
-                if (topSeatsInput) topSeatsInput.value = topSeats || 0;
-                if (rightSeatsInput) rightSeatsInput.value = rightSeats || 0;
-                if (bottomSeatsInput) bottomSeatsInput.value = bottomSeats || 0;
-                if (leftSeatsInput) leftSeatsInput.value = leftSeats || 0;
+                if (topSeatsInput) {
+                    topSeatsInput.value = topSeats || 0;
+                    console.log('Set topSeats to:', topSeatsInput.value);
+                }
+                if (rightSeatsInput) {
+                    rightSeatsInput.value = rightSeats || 0;
+                    console.log('Set rightSeats to:', rightSeatsInput.value);
+                }
+                if (bottomSeatsInput) {
+                    bottomSeatsInput.value = bottomSeats || 0;
+                    console.log('Set bottomSeats to:', bottomSeatsInput.value);
+                }
+                if (leftSeatsInput) {
+                    leftSeatsInput.value = leftSeats || 0;
+                    console.log('Set leftSeats to:', leftSeatsInput.value);
+                }
                 
                 // Trigger table update - use the main handler to ensure visual update
+                console.log('Calling handleTableInputChange...');
                 handleTableInputChange();
+                console.log('Table rendering completed');
             }
             
             // Apply guest list
@@ -1450,9 +1466,19 @@ function handleImportConfig(event) {
                 
                 // Update visuals after a short delay to ensure table is rendered
                 setTimeout(() => {
+                    console.log('Updating seat visuals for fixed assignments...');
+                    console.log('currentSeatElements available:', !!currentSeatElements);
+                    if (currentSeatElements) {
+                        console.log('Available seat IDs:', Object.keys(currentSeatElements));
+                    }
+                    
                     Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                        console.log(`Trying to update seat ${seatId} with guest ${guestName}`);
                         if (currentSeatElements && currentSeatElements[seatId]) {
+                            console.log(`Found seat element for seat ${seatId}, updating display`);
                             updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+                        } else {
+                            console.warn(`No seat element found for seat ${seatId}`);
                         }
                     });
                 }, 100);
