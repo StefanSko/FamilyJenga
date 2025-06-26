@@ -1422,10 +1422,8 @@ function handleImportConfig(event) {
                 if (bottomSeatsInput) bottomSeatsInput.value = bottomSeats || 0;
                 if (leftSeatsInput) leftSeatsInput.value = leftSeats || 0;
                 
-                // Trigger table update
-                [topSeatsInput, rightSeatsInput, bottomSeatsInput, leftSeatsInput].forEach(input => {
-                    if (input) input.dispatchEvent(new Event('input'));
-                });
+                // Trigger table update - use the main handler to ensure visual update
+                handleTableInputChange();
             }
             
             // Apply guest list
@@ -1445,13 +1443,19 @@ function handleImportConfig(event) {
                     handleRemoveAssignment(seatId);
                 });
                 
-                // Add imported assignments
+                // Add imported assignments with retry for visual updates
                 Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
                     fixedAssignmentManager.addAssignment(guestName, seatId);
-                    if (currentSeatElements && currentSeatElements[seatId]) {
-                        updateSeatDisplay(currentSeatElements[seatId], guestName, true);
-                    }
                 });
+                
+                // Update visuals after a short delay to ensure table is rendered
+                setTimeout(() => {
+                    Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                        if (currentSeatElements && currentSeatElements[seatId]) {
+                            updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+                        }
+                    });
+                }, 100);
             }
             
             // Apply adjacency constraints
