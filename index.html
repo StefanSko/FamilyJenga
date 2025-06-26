@@ -84,6 +84,13 @@
             
             <section class="generate-section">
                 <button type="button" class="generate-btn">Generate Seating</button>
+                <div class="loading-spinner hidden" id="loading-spinner">
+                    <div class="spinner-icon"></div>
+                    <span>Generating seating arrangement...</span>
+                </div>
+                <div class="status-messages" id="status-messages">
+                    <!-- Status messages will be displayed here -->
+                </div>
             </section>
         </div>
         
@@ -101,6 +108,7 @@
     <script src="scripts/constraintsUI.js"></script>
     <script src="scripts/adjacencyCalculator.js"></script>
     <script src="scripts/constraintValidator.js"></script>
+    <script src="scripts/seatingGenerator.js"></script>
     <script src="scripts/app.js"></script>
 </body>
 </html>

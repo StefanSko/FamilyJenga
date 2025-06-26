@@ -53,6 +53,9 @@ function initializeApp() {
     
     // Initialize adjacency constraints UI as required by Prompt 8
     initializeConstraintsUI();
+    
+    // Initialize generate button as required by Prompt 12
+    initializeGenerateButton();
 }
 
 function testModels() {
@@ -791,6 +794,231 @@ function displayValidationResults(validationResult) {
     
     // Update generate button state based on validation
     updateGenerateButtonState(validationResult.isValid);
+}
+
+// UI Integration Functions (Prompt 12)
+
+function initializeGenerateButton() {
+    const generateBtn = document.querySelector('.generate-btn');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', handleGenerateSeating);
+    }
+}
+
+function handleGenerateSeating() {
+    console.log('Generate seating button clicked');
+    
+    // Clear previous status messages
+    clearStatusMessages();
+    
+    // Validate all inputs first
+    const validation = validateAllInputsForGeneration();
+    if (!validation.isValid) {
+        showGenerationError(validation.error, []);
+        return;
+    }
+    
+    // Show loading state
+    setLoadingState(true);
+    
+    try {
+        // Get current state
+        const guests = [...currentGuestList];
+        const tableConfig = currentTableConfig;
+        const fixedAssignments = fixedAssignmentManager.getAllAssignments();
+        const adjacencyConstraints = adjacencyConstraintManager.getAllConstraints();
+        const adjacencyMap = currentAdjacencyMap;
+        
+        console.log('Generating seating with:', {
+            guests: guests.length,
+            totalSeats: tableConfig.totalSeats,
+            fixedAssignments: Object.keys(fixedAssignments).length,
+            adjacencyConstraints: adjacencyConstraints.length
+        });
+        
+        // Call generation algorithm
+        // eslint-disable-next-line no-undef
+        const result = generateSeating(guests, tableConfig, fixedAssignments, adjacencyConstraints, adjacencyMap);
+        
+        console.log('Generation result:', result);
+        
+        // Hide loading state
+        setLoadingState(false);
+        
+        if (result.success) {
+            // Display results
+            displayGeneratedSeating(result.arrangement);
+            showGenerationSuccess(result.arrangement);
+        } else {
+            // Display errors
+            showGenerationError(result.error, result.unmetConstraints || []);
+            
+            // Show partial solution if available
+            if (result.arrangement && result.arrangement.size > 0) {
+                displayGeneratedSeating(result.arrangement);
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error during generation:', error);
+        setLoadingState(false);
+        showGenerationError('An unexpected error occurred during generation: ' + error.message, []);
+    }
+}
+
+function validateAllInputsForGeneration() {
+    // Check guest list
+    if (!currentGuestList || currentGuestList.length === 0) {
+        return { isValid: false, error: 'Please enter at least one guest name' };
+    }
+    
+    // Check table configuration
+    if (!currentTableConfig || currentTableConfig.totalSeats === 0) {
+        return { isValid: false, error: 'Please configure the table with at least one seat' };
+    }
+    
+    // Check guest count vs seat count
+    if (currentGuestList.length > currentTableConfig.totalSeats) {
+        return { 
+            isValid: false, 
+            error: `Too many guests (${currentGuestList.length}) for available seats (${currentTableConfig.totalSeats})` 
+        };
+    }
+    
+    // Check adjacency map
+    if (!currentAdjacencyMap) {
+        return { isValid: false, error: 'Table adjacency data is not available' };
+    }
+    
+    return { isValid: true };
+}
+
+function displayGeneratedSeating(arrangement) {
+    console.log('Displaying generated seating arrangement:', arrangement);
+    
+    if (!currentSeatElements) {
+        console.error('No seat elements available for display');
+        return;
+    }
+    
+    // Clear previous generated assignments (but keep fixed ones)
+    clearPreviousGeneratedAssignments();
+    
+    // Display each assignment
+    for (const [seatId, guestName] of arrangement) {
+        const seatElement = currentSeatElements[seatId];
+        if (seatElement) {
+            // Check if this is a fixed assignment
+            const isFixed = fixedAssignmentManager.getAssignment(seatId) === guestName;
+            
+            if (!isFixed) {
+                // Only update display for generated assignments (fixed ones are already shown)
+                updateSeatDisplay(seatElement, guestName, false);
+            }
+        } else {
+            console.warn('Seat element not found for seat ID:', seatId);
+        }
+    }
+}
+
+function clearPreviousGeneratedAssignments() {
+    if (!currentSeatElements) {
+        return;
+    }
+    
+    Object.values(currentSeatElements).forEach(seatElement => {
+        // Only clear generated assignments, keep fixed ones
+        if (seatElement.classList.contains('generated-assignment')) {
+            const seatId = seatElement.getAttribute('data-seat-id');
+            updateSeatDisplay(seatElement, null, false);
+            console.log('Cleared generated assignment from seat:', seatId);
+        }
+    });
+}
+
+function showGenerationSuccess(arrangement) {
+    const assignedGuests = Array.from(arrangement.values());
+    const message = `Successfully seated ${assignedGuests.length} guests!`;
+    
+    showStatusMessage(message, 'success');
+}
+
+function showGenerationError(error, unmetConstraints) {
+    console.log('Showing generation error:', error, unmetConstraints);
+    
+    let message = error;
+    
+    // Add constraint details if available
+    if (unmetConstraints && unmetConstraints.length > 0) {
+        message += '\n\nConstraint issues:';
+        unmetConstraints.forEach(constraint => {
+            message += `\n• ${constraint.reason}`;
+        });
+        
+        message += '\n\nTry removing some constraints or changing fixed seat assignments.';
+    }
+    
+    showStatusMessage(message, 'error');
+}
+
+function setLoadingState(isLoading) {
+    const generateBtn = document.querySelector('.generate-btn');
+    const loadingSpinner = document.getElementById('loading-spinner');
+    
+    if (generateBtn) {
+        generateBtn.disabled = isLoading;
+        generateBtn.textContent = isLoading ? 'Generating...' : 'Generate Seating';
+    }
+    
+    if (loadingSpinner) {
+        if (isLoading) {
+            loadingSpinner.classList.remove('hidden');
+        } else {
+            loadingSpinner.classList.add('hidden');
+        }
+    }
+}
+
+function showStatusMessage(message, type) {
+    const statusContainer = document.getElementById('status-messages');
+    if (!statusContainer) {
+        console.error('Status messages container not found');
+        return;
+    }
+    
+    const messageElement = document.createElement('div');
+    messageElement.className = `status-message ${type}`;
+    
+    // Handle multiline messages
+    const lines = message.split('\n');
+    if (lines.length > 1) {
+        messageElement.innerHTML = lines.map(line => {
+            if (line.startsWith('•')) {
+                return `<div class="constraint-details">${line}</div>`;
+            }
+            return line;
+        }).join('<br>');
+    } else {
+        messageElement.textContent = message;
+    }
+    
+    statusContainer.appendChild(messageElement);
+    
+    // Auto-dismiss success messages after 5 seconds
+    if (type === 'success') {
+        setTimeout(() => {
+            if (messageElement.parentNode) {
+                messageElement.remove();
+            }
+        }, 5000);
+    }
+}
+
+function clearStatusMessages() {
+    const statusContainer = document.getElementById('status-messages');
+    if (statusContainer) {
+        statusContainer.innerHTML = '';
+    }
 }
 
 function showConstraintValidationErrors(errors) {
