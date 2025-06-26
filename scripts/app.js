@@ -1343,10 +1343,163 @@ function handleLoadExample() {
     }
 }
 
+// Export Configuration functionality
+function handleExportConfig() {
+    console.log('Export Config button clicked');
+    
+    try {
+        // Gather current configuration
+        const config = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            tableConfig: currentTableConfig,
+            guestList: [...currentGuestList],
+            fixedAssignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+            adjacencyConstraints: adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : []
+        };
+        
+        // Create downloadable file
+        const dataStr = JSON.stringify(config, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `seating-config-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show success message
+        const statusMessages = document.getElementById('status-messages');
+        if (errorDisplay) {
+            errorDisplay.showSuccess('Configuration exported successfully', statusMessages);
+        }
+        
+        console.log('Configuration exported:', config);
+        
+    } catch (error) {
+        console.error('Export failed:', error);
+        const statusMessages = document.getElementById('status-messages');
+        if (errorDisplay) {
+            errorDisplay.showError('Export failed: ' + error.message, statusMessages);
+        }
+    }
+}
+
+// Import Configuration functionality
+function handleImportConfig(event) {
+    console.log('Import Config file selected');
+    
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const config = JSON.parse(e.target.result);
+            
+            // Validate config structure
+            if (!config.version || !config.tableConfig || !config.guestList) {
+                throw new Error('Invalid configuration file format');
+            }
+            
+            console.log('Importing configuration:', config);
+            
+            // Apply table configuration
+            if (config.tableConfig) {
+                const { topSeats, rightSeats, bottomSeats, leftSeats } = config.tableConfig;
+                
+                const topSeatsInput = document.getElementById('topSeats');
+                const rightSeatsInput = document.getElementById('rightSeats');
+                const bottomSeatsInput = document.getElementById('bottomSeats');
+                const leftSeatsInput = document.getElementById('leftSeats');
+                
+                if (topSeatsInput) topSeatsInput.value = topSeats || 0;
+                if (rightSeatsInput) rightSeatsInput.value = rightSeats || 0;
+                if (bottomSeatsInput) bottomSeatsInput.value = bottomSeats || 0;
+                if (leftSeatsInput) leftSeatsInput.value = leftSeats || 0;
+                
+                // Trigger table update
+                [topSeatsInput, rightSeatsInput, bottomSeatsInput, leftSeatsInput].forEach(input => {
+                    if (input) input.dispatchEvent(new Event('input'));
+                });
+            }
+            
+            // Apply guest list
+            if (config.guestList) {
+                const guestListInput = document.getElementById('guest-list-input');
+                if (guestListInput) {
+                    guestListInput.value = config.guestList.join('\n');
+                    guestListInput.dispatchEvent(new Event('input'));
+                }
+            }
+            
+            // Apply fixed assignments
+            if (config.fixedAssignments && fixedAssignmentManager) {
+                // Clear existing assignments first
+                const existingAssignments = fixedAssignmentManager.getAllAssignments();
+                Object.keys(existingAssignments).forEach(seatId => {
+                    handleRemoveAssignment(seatId);
+                });
+                
+                // Add imported assignments
+                Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                    fixedAssignmentManager.addAssignment(guestName, seatId);
+                    if (currentSeatElements && currentSeatElements[seatId]) {
+                        updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+                    }
+                });
+            }
+            
+            // Apply adjacency constraints
+            if (config.adjacencyConstraints && adjacencyConstraintManager) {
+                // Clear existing constraints
+                const existingConstraints = adjacencyConstraintManager.getAllConstraints();
+                for (let i = existingConstraints.length - 1; i >= 0; i--) {
+                    adjacencyConstraintManager.removeConstraint(i);
+                }
+                
+                // Add imported constraints
+                config.adjacencyConstraints.forEach(constraint => {
+                    adjacencyConstraintManager.addConstraint(constraint.guestA, constraint.guestB);
+                });
+                
+                // Update constraints UI
+                // eslint-disable-next-line no-undef
+                renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list'));
+            }
+            
+            // Show success message
+            const statusMessages = document.getElementById('status-messages');
+            if (errorDisplay) {
+                errorDisplay.showSuccess('Configuration imported successfully', statusMessages);
+            }
+            
+        } catch (error) {
+            console.error('Import failed:', error);
+            const statusMessages = document.getElementById('status-messages');
+            if (errorDisplay) {
+                errorDisplay.showError('Import failed: ' + error.message, statusMessages);
+            }
+        }
+    };
+    
+    reader.readAsText(file);
+    
+    // Clear the file input so the same file can be selected again
+    event.target.value = '';
+}
+
 // Initialize action buttons
 function initializeActionButtons() {
     const clearAllBtn = document.getElementById('clear-all-btn');
     const exampleBtn = document.getElementById('example-btn');
+    const exportBtn = document.getElementById('export-btn');
+    const importBtn = document.getElementById('import-btn');
+    const importFileInput = document.getElementById('import-file-input');
     
     if (clearAllBtn) {
         clearAllBtn.addEventListener('click', handleClearAll);
@@ -1354,6 +1507,20 @@ function initializeActionButtons() {
     
     if (exampleBtn) {
         exampleBtn.addEventListener('click', handleLoadExample);
+    }
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', handleExportConfig);
+    }
+    
+    if (importBtn) {
+        importBtn.addEventListener('click', () => {
+            importFileInput.click();
+        });
+    }
+    
+    if (importFileInput) {
+        importFileInput.addEventListener('change', handleImportConfig);
     }
 }
 
