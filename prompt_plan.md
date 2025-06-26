@@ -172,7 +172,7 @@ Update main.css:
 
 The guest list should provide real-time feedback as users type, clearly indicating when the list is valid for the current table configuration.
 
-## Prompt 6: Drag and Drop Foundation
+## Prompt 6: Drag and Drop Foundation ✅ COMPLETED
 
 Implement drag and drop functionality for assigning guests to seats.
 
@@ -214,7 +214,7 @@ Update main.css:
 
 Test that guests can be dragged from the list and dropped on seats with clear visual feedback throughout the process.
 
-## Prompt 7: Fixed Assignment Logic
+## Prompt 7: Fixed Assignment Logic ✅ COMPLETED
 
 Implement the logic for storing and displaying fixed seat assignments.
 
@@ -261,7 +261,7 @@ Update main.css:
 
 The system should now support dragging guests to seats, showing assignments visually, and removing them by clicking.
 
-## Prompt 8: Adjacency Constraint UI
+## Prompt 8: Adjacency Constraint UI ✅ COMPLETED
 
 Create the user interface for adding adjacency constraints between guests.
 

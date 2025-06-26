@@ -154,9 +154,26 @@ function renderTable(tableConfig, containerElement) {
 
 // Function to update seat display (for later use with assignments)
 function updateSeatDisplay(seatElement, guestName, isFixed) {
-    if (!seatElement) return;
+    if (!seatElement) {
+        console.error('updateSeatDisplay: seatElement is null');
+        return;
+    }
     
-    const seatText = seatElement.querySelector('.seat-number');
+    // For SVG elements, use a different approach to find the text element
+    let seatText = seatElement.querySelector('.seat-number');
+    
+    // If that doesn't work, try finding by tag name since we know there should be a text element
+    if (!seatText) {
+        const textElements = seatElement.querySelectorAll('text');
+        if (textElements.length > 0) {
+            seatText = textElements[0]; // Use the first text element
+        }
+    }
+    
+    if (!seatText) {
+        console.error('updateSeatDisplay: No text element found in seat element');
+        return;
+    }
     
     if (guestName) {
         // Show guest name
@@ -165,14 +182,91 @@ function updateSeatDisplay(seatElement, guestName, isFixed) {
         
         if (isFixed) {
             seatElement.classList.add('fixed-assignment');
+            
+            // Add remove button for fixed assignments
+            addRemoveButton(seatElement);
         } else {
             seatElement.classList.add('generated-assignment');
+            
+            // Remove any existing remove button for generated assignments
+            removeRemoveButton(seatElement);
         }
     } else {
         // Show seat number
         const seatId = seatElement.getAttribute('data-seat-id');
         seatText.textContent = seatId;
         seatElement.classList.remove('occupied', 'fixed-assignment', 'generated-assignment');
+        
+        // Remove any existing remove button
+        removeRemoveButton(seatElement);
+    }
+}
+
+// Helper functions for remove button functionality
+function addRemoveButton(seatElement) {
+    // Check if remove button already exists
+    if (seatElement.querySelector('.remove-button')) {
+        return;
+    }
+    
+    const seatId = seatElement.getAttribute('data-seat-id');
+    
+    // Create remove button as SVG element
+    const removeButton = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    removeButton.setAttribute('cx', '0'); // Will be positioned relative to seat
+    removeButton.setAttribute('cy', '0');
+    removeButton.setAttribute('r', '8');
+    removeButton.classList.add('remove-button');
+    removeButton.style.cursor = 'pointer';
+    
+    // Create X icon
+    const removeIcon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    removeIcon.setAttribute('x', '0');
+    removeIcon.setAttribute('y', '4');
+    removeIcon.setAttribute('text-anchor', 'middle');
+    removeIcon.textContent = '×';
+    removeIcon.classList.add('remove-icon');
+    removeIcon.style.pointerEvents = 'none'; // Let clicks pass through to button
+    
+    // Position button relative to seat circle
+    const seatCircle = seatElement.querySelector('.seat-circle, circle');
+    if (seatCircle) {
+        const cx = parseFloat(seatCircle.getAttribute('cx'));
+        const cy = parseFloat(seatCircle.getAttribute('cy'));
+        
+        // Position button at top-right of seat circle
+        removeButton.setAttribute('cx', cx + 12);
+        removeButton.setAttribute('cy', cy - 12);
+        removeIcon.setAttribute('x', cx + 12);
+        removeIcon.setAttribute('y', cy - 8);
+    }
+    
+    // Add click handler
+    removeButton.addEventListener('click', function(event) {
+        event.stopPropagation(); // Prevent seat click events
+        
+        // Call global remove handler if it exists
+        if (typeof handleRemoveAssignment === 'function') {
+            handleRemoveAssignment(seatId);
+        } else {
+            console.log('Remove assignment requested for seat:', seatId);
+        }
+    });
+    
+    // Add to seat element
+    seatElement.appendChild(removeButton);
+    seatElement.appendChild(removeIcon);
+}
+
+function removeRemoveButton(seatElement) {
+    const removeButton = seatElement.querySelector('.remove-button');
+    const removeIcon = seatElement.querySelector('.remove-icon');
+    
+    if (removeButton) {
+        removeButton.remove();
+    }
+    if (removeIcon) {
+        removeIcon.remove();
     }
 }
 
@@ -181,6 +275,8 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         calculateSeatPositions,
         renderTable,
-        updateSeatDisplay
+        updateSeatDisplay,
+        addRemoveButton,
+        removeRemoveButton
     };
 }

@@ -92,11 +92,66 @@ function findDuplicateGuests(guests) {
     return duplicates;
 }
 
+// Fixed Assignment Validation
+function validateFixedAssignment(guestName, seatId, guestList, assignmentManager) {
+    // Validate guest name
+    if (!guestName || typeof guestName !== 'string' || guestName.trim() === '') {
+        return {
+            isValid: false,
+            error: 'Guest name must be a non-empty string'
+        };
+    }
+    
+    // Validate seat ID
+    if (!seatId || typeof seatId !== 'string' || seatId.trim() === '') {
+        return {
+            isValid: false,
+            error: 'Seat ID must be a non-empty string'
+        };
+    }
+    
+    // Check if guest exists in guest list
+    if (!guestList || !guestList.includes(guestName)) {
+        return {
+            isValid: false,
+            error: `Guest "${guestName}" is not in the current guest list`
+        };
+    }
+    
+    // Check for conflicts using assignment manager
+    if (assignmentManager) {
+        // Check if seat is already assigned
+        const currentSeatGuest = assignmentManager.getAssignment(seatId);
+        if (currentSeatGuest && currentSeatGuest !== guestName) {
+            return {
+                isValid: false,
+                error: `Seat ${seatId} is already assigned to ${currentSeatGuest}`
+            };
+        }
+        
+        // Check if guest is already assigned elsewhere
+        const currentGuestSeat = assignmentManager.getSeatForGuest(guestName);
+        if (currentGuestSeat && currentGuestSeat !== seatId) {
+            return {
+                isValid: false,
+                error: `Guest "${guestName}" is already assigned to seat ${currentGuestSeat}`
+            };
+        }
+    }
+    
+    return {
+        isValid: true,
+        guestName: guestName,
+        seatId: seatId
+    };
+}
+
 // Export functions for Node.js environment if available
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         validateTableInputs,
         validateGuestCount,
-        findDuplicateGuests
+        findDuplicateGuests,
+        validateFixedAssignment
     };
 }

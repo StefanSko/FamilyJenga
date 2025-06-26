@@ -14,6 +14,10 @@ let currentConstraints = [];
 let currentSeatingArrangement = null;
 // eslint-disable-next-line no-unused-vars
 let currentSeatElements = null;
+// eslint-disable-next-line no-unused-vars
+let currentAssignedGuests = [];
+// eslint-disable-next-line no-unused-vars
+let fixedAssignmentManager = null;
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM loaded, initializing application...');
@@ -25,6 +29,10 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     console.log('Application initialized successfully');
     
+    // Initialize fixed assignment manager as required by Prompt 7
+    // eslint-disable-next-line no-undef
+    fixedAssignmentManager = new FixedAssignmentManager();
+    
     // Test models with sample data as required by Prompt 2
     testModels();
     
@@ -33,6 +41,12 @@ function initializeApp() {
     
     // Initialize guest list UI as required by Prompt 5
     initializeGuestListUI();
+    
+    // Initialize drag and drop functionality as required by Prompt 6
+    initializeDragDropUI();
+    
+    // Initialize adjacency constraints UI as required by Prompt 8
+    initializeConstraintsUI();
 }
 
 function testModels() {
@@ -196,6 +210,9 @@ function renderTableVisualization() {
         console.log('Rendering table visualization...');
         currentSeatElements = renderTable(currentTableConfig, tableDisplay);
         console.log('Table rendered successfully with', Object.keys(currentSeatElements).length, 'seats');
+        
+        // Set up drag and drop for the new seats
+        setupDragDropEventHandlers();
     } catch (error) {
         console.error('Error rendering table:', error);
         showTableRenderError(error.message);
@@ -261,6 +278,24 @@ function handleGuestListChange() {
         // Store valid guest list
         currentGuestList = guestResult.guests;
         console.log('Updated guest list:', currentGuestList);
+        
+        // Clear any existing assignments when guest list changes
+        currentAssignedGuests = [];
+        fixedAssignmentManager.clearAllAssignments();
+        
+        // Clear any seat displays
+        if (currentSeatElements) {
+            Object.values(currentSeatElements).forEach(seatElement => {
+                // eslint-disable-next-line no-undef
+                updateSeatDisplay(seatElement, null, false);
+            });
+        }
+        
+        // Update draggable guest list
+        renderDraggableGuestList();
+        
+        // Update constraints UI with new guest list
+        updateConstraintUI();
         
         // Validate against current table configuration
         if (currentTableConfig) {
@@ -396,3 +431,263 @@ function clearInputErrorStates() {
         }
     });
 }
+
+// Drag and Drop Functionality
+
+function initializeDragDropUI() {
+    console.log('Initializing drag and drop UI...');
+    
+    // Render initial empty guest list
+    renderDraggableGuestList();
+    
+    // Set up drag and drop when guest list or table changes
+    setupDragDropEventHandlers();
+}
+
+function renderDraggableGuestList() {
+    const guestContainer = document.getElementById('guest-list-container');
+    if (!guestContainer) {
+        console.error('Guest list container not found');
+        return;
+    }
+    
+    if (!currentGuestList || currentGuestList.length === 0) {
+        guestContainer.innerHTML = '<div class="empty-guest-list">No guests entered yet. Enter guest names above to begin.</div>';
+        return;
+    }
+    
+    // Use the drag and drop module to render the guest list
+    // eslint-disable-next-line no-undef
+    renderGuestList(currentGuestList, guestContainer, currentAssignedGuests);
+    
+    console.log('Rendered draggable guest list with', currentGuestList.length, 'guests');
+}
+
+function setupDragDropEventHandlers() {
+    // Make seats droppable when table is rendered
+    if (currentSeatElements) {
+        Object.values(currentSeatElements).forEach(seatElement => {
+            const seatId = seatElement.getAttribute('data-seat-id');
+            if (seatId) {
+                // eslint-disable-next-line no-undef
+                makeDroppable(seatElement, seatId, handleSeatDrop);
+            }
+        });
+        console.log('Made', Object.keys(currentSeatElements).length, 'seats droppable');
+    }
+}
+
+function handleSeatDrop(guestName, seatId) {
+    // Validate the assignment using the validation function
+    // eslint-disable-next-line no-undef
+    const validation = validateFixedAssignment(guestName, seatId, currentGuestList, fixedAssignmentManager);
+    
+    if (!validation.isValid) {
+        console.error('Assignment validation failed:', validation.error);
+        // TODO: Show user-friendly error message
+        return;
+    }
+    
+    // Attempt to add assignment to manager
+    const result = fixedAssignmentManager.addAssignment(guestName, seatId);
+    
+    if (!result.success) {
+        console.error('Failed to add assignment:', result.error);
+        // TODO: Show user-friendly error message
+        return;
+    }
+    
+    console.log('Successfully assigned guest', guestName, 'to seat', seatId);
+    
+    // Update assigned guests list for drag and drop filtering
+    currentAssignedGuests = Object.values(fixedAssignmentManager.getAllAssignments());
+    
+    // Update the seat display to show the assignment
+    const seatElement = currentSeatElements[seatId];
+    if (seatElement) {
+        // eslint-disable-next-line no-undef
+        updateSeatDisplay(seatElement, guestName, true);
+    } else {
+        console.error('Seat element not found for seat ID:', seatId);
+    }
+    
+    // Update the draggable guest list
+    renderDraggableGuestList();
+}
+
+// eslint-disable-next-line no-unused-vars
+function handleRemoveAssignment(seatId) {
+    console.log('Removing assignment for seat:', seatId);
+    
+    // Remove assignment from manager
+    const result = fixedAssignmentManager.removeAssignment(seatId);
+    
+    if (!result.success) {
+        console.error('Failed to remove assignment:', result.error);
+        return;
+    }
+    
+    console.log('Successfully removed guest', result.removedGuest, 'from seat', seatId);
+    
+    // Update assigned guests list for drag and drop filtering
+    currentAssignedGuests = Object.values(fixedAssignmentManager.getAllAssignments());
+    
+    // Clear the seat display
+    const seatElement = currentSeatElements[seatId];
+    if (seatElement) {
+        // eslint-disable-next-line no-undef
+        updateSeatDisplay(seatElement, null, false);
+    } else {
+        console.error('Seat element not found for seat ID:', seatId);
+    }
+    
+    // Update the draggable guest list to make the guest available again
+    renderDraggableGuestList();
+}
+
+// Adjacency Constraints UI Functions
+
+function initializeConstraintsUI() {
+    console.log('Initializing constraints UI...');
+    
+    // Get UI elements
+    const guestSelectA = document.getElementById('guest-select-a');
+    const guestSelectB = document.getElementById('guest-select-b');
+    const addConstraintBtn = document.getElementById('add-constraint-btn');
+    const constraintsContainer = document.getElementById('constraints-list-container');
+    
+    if (!guestSelectA || !guestSelectB || !addConstraintBtn || !constraintsContainer) {
+        console.error('Constraints UI elements not found');
+        return;
+    }
+    
+    // Initialize empty constraints list
+    currentConstraints = [];
+    
+    // Set up event listeners
+    guestSelectA.addEventListener('change', validateAndUpdateConstraintForm);
+    guestSelectB.addEventListener('change', validateAndUpdateConstraintForm);
+    addConstraintBtn.addEventListener('click', handleAddConstraint);
+    
+    // Set up delegation for delete buttons
+    constraintsContainer.addEventListener('click', handleDeleteConstraint);
+    
+    // Initial render
+    updateConstraintUI();
+    
+    console.log('Constraints UI initialized');
+}
+
+function updateConstraintUI() {
+    // Update dropdowns with current guest list
+    const guestSelectA = document.getElementById('guest-select-a');
+    const guestSelectB = document.getElementById('guest-select-b');
+    
+    if (guestSelectA && guestSelectB) {
+        // eslint-disable-next-line no-undef
+        populateGuestDropdowns(currentGuestList, [guestSelectA, guestSelectB]);
+    }
+    
+    // Render constraints list
+    const constraintsContainer = document.getElementById('constraints-list-container');
+    if (constraintsContainer) {
+        // eslint-disable-next-line no-undef
+        renderConstraintsList(currentConstraints, constraintsContainer);
+    }
+    
+    // Validate form state
+    validateAndUpdateConstraintForm();
+}
+
+function validateAndUpdateConstraintForm() {
+    const guestSelectA = document.getElementById('guest-select-a');
+    const guestSelectB = document.getElementById('guest-select-b');
+    const addConstraintBtn = document.getElementById('add-constraint-btn');
+    
+    if (!guestSelectA || !guestSelectB || !addConstraintBtn) {
+        return;
+    }
+    
+    const guestA = guestSelectA.value;
+    const guestB = guestSelectB.value;
+    
+    // Validate selection
+    // eslint-disable-next-line no-undef
+    const validation = validateConstraintSelection(guestA, guestB, currentConstraints);
+    
+    // Update button state
+    // eslint-disable-next-line no-undef
+    updateAddConstraintButtonState(addConstraintBtn, validation.isValid);
+    
+    // Show validation errors if any
+    if (!validation.isValid && (guestA || guestB)) {
+        const constraintsSection = document.querySelector('.adjacency-constraints-section');
+        // eslint-disable-next-line no-undef
+        showConstraintValidationError(validation.errors[0], constraintsSection);
+    }
+}
+
+function handleAddConstraint() {
+    const guestSelectA = document.getElementById('guest-select-a');
+    const guestSelectB = document.getElementById('guest-select-b');
+    
+    if (!guestSelectA || !guestSelectB) {
+        return;
+    }
+    
+    const guestA = guestSelectA.value;
+    const guestB = guestSelectB.value;
+    
+    // Validate one more time
+    // eslint-disable-next-line no-undef
+    const validation = validateConstraintSelection(guestA, guestB, currentConstraints);
+    
+    if (!validation.isValid) {
+        console.error('Cannot add constraint:', validation.errors);
+        return;
+    }
+    
+    // Create constraint object
+    try {
+        const constraint = createAdjacencyConstraint(guestA, guestB);
+        currentConstraints.push(constraint);
+        
+        console.log('Added constraint:', constraint);
+        
+        // Clear form
+        // eslint-disable-next-line no-undef
+        clearConstraintForm([guestSelectA, guestSelectB]);
+        
+        // Update UI
+        updateConstraintUI();
+        
+    } catch (error) {
+        console.error('Error creating constraint:', error);
+        const constraintsSection = document.querySelector('.adjacency-constraints-section');
+        // eslint-disable-next-line no-undef
+        showConstraintValidationError('Error adding constraint', constraintsSection);
+    }
+}
+
+function handleDeleteConstraint(event) {
+    // Check if the clicked element is a delete button
+    if (!event.target.classList.contains('delete-constraint-btn')) {
+        return;
+    }
+    
+    const constraintIndex = parseInt(event.target.getAttribute('data-constraint-index'));
+    
+    if (isNaN(constraintIndex) || constraintIndex < 0 || constraintIndex >= currentConstraints.length) {
+        console.error('Invalid constraint index for deletion:', constraintIndex);
+        return;
+    }
+    
+    const removedConstraint = currentConstraints[constraintIndex];
+    currentConstraints.splice(constraintIndex, 1);
+    
+    console.log('Removed constraint:', removedConstraint);
+    
+    // Update UI
+    updateConstraintUI();
+}
+

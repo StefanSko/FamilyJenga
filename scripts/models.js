@@ -129,6 +129,107 @@ function createSeatingArrangement() {
     return new Map();
 }
 
+// Fixed Assignment Manager Class
+class FixedAssignmentManager {
+    constructor() {
+        this.assignments = {}; // seatId -> guestName
+        this.guestToSeat = {}; // guestName -> seatId
+    }
+    
+    addAssignment(guestName, seatId) {
+        // Validate inputs
+        if (!guestName || typeof guestName !== 'string' || guestName.trim() === '') {
+            return {
+                success: false,
+                error: 'Guest name must be a non-empty string'
+            };
+        }
+        
+        if (!seatId || typeof seatId !== 'string' || seatId.trim() === '') {
+            return {
+                success: false,
+                error: 'Seat ID must be a non-empty string'
+            };
+        }
+        
+        // Check if seat is already assigned
+        if (this.assignments[seatId]) {
+            return {
+                success: false,
+                error: `Seat ${seatId} is already assigned to ${this.assignments[seatId]}`
+            };
+        }
+        
+        // Check if guest is already assigned elsewhere
+        if (this.guestToSeat[guestName]) {
+            return {
+                success: false,
+                error: `Guest ${guestName} is already assigned to seat ${this.guestToSeat[guestName]}`
+            };
+        }
+        
+        // Add assignment
+        this.assignments[seatId] = guestName;
+        this.guestToSeat[guestName] = seatId;
+        
+        return {
+            success: true,
+            guestName: guestName,
+            seatId: seatId
+        };
+    }
+    
+    removeAssignment(seatId) {
+        // Check if seat has an assignment
+        if (!this.assignments[seatId]) {
+            return {
+                success: false,
+                error: `No assignment found for seat ${seatId}`
+            };
+        }
+        
+        const guestName = this.assignments[seatId];
+        
+        // Remove assignment
+        delete this.assignments[seatId];
+        delete this.guestToSeat[guestName];
+        
+        return {
+            success: true,
+            removedGuest: guestName,
+            seatId: seatId
+        };
+    }
+    
+    getAssignment(seatId) {
+        return this.assignments[seatId] || null;
+    }
+    
+    getAllAssignments() {
+        return { ...this.assignments }; // Return copy to prevent external modification
+    }
+    
+    hasGuest(guestName) {
+        return Boolean(this.guestToSeat[guestName]);
+    }
+    
+    // Get seat for a guest (utility method)
+    getSeatForGuest(guestName) {
+        return this.guestToSeat[guestName] || null;
+    }
+    
+    // Clear all assignments (utility method)
+    clearAllAssignments() {
+        this.assignments = {};
+        this.guestToSeat = {};
+    }
+    
+    // Get count of assignments (utility method)
+    getAssignmentCount() {
+        return Object.keys(this.assignments).length;
+    }
+}
+
 // Export functions for Node.js environment if available
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
@@ -138,6 +239,7 @@ if (typeof module !== 'undefined' && module.exports) {
         validateGuestList,
         createFixedAssignment,
         createAdjacencyConstraint,
-        createSeatingArrangement
+        createSeatingArrangement,
+        FixedAssignmentManager
     };
 }

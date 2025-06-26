@@ -89,6 +89,29 @@ module.exports = {
         'updateGuestCountDisplay': 'readonly',
         'showGuestValidationErrors': 'readonly',
         'clearGuestValidationErrors': 'readonly',
-        'updateGuestListValidationState': 'readonly'
+        'updateGuestListValidationState': 'readonly',
+        
+        // Drag and drop functions
+        'makeDraggable': 'readonly',
+        'makeDroppable': 'readonly',
+        'renderGuestList': 'readonly',
+        'addDragVisualFeedback': 'readonly',
+        'removeDragVisualFeedback': 'readonly',
+        'addDropZoneHighlight': 'readonly',
+        'removeDropZoneHighlight': 'readonly',
+        'setCurrentDragData': 'readonly',
+        'getCurrentDragData': 'readonly',
+        'initializeDragAndDrop': 'readonly',
+        'handleSeatDrop': 'readonly',
+        'initializeDragDropUI': 'readonly',
+        'renderDraggableGuestList': 'readonly',
+        'setupDragDropEventHandlers': 'readonly',
+        
+        // Fixed assignment functions  
+        'FixedAssignmentManager': 'readonly',
+        'validateFixedAssignment': 'readonly',
+        'handleRemoveAssignment': 'readonly',
+        'addRemoveButton': 'readonly',
+        'removeRemoveButton': 'readonly'
     }
 };

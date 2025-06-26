@@ -6,7 +6,8 @@ const validation = require('./scripts/validation.js');
 const {
     validateTableInputs,
     validateGuestCount,
-    findDuplicateGuests
+    findDuplicateGuests,
+    validateFixedAssignment
 } = validation;
 
 class ValidationTestRunner {
@@ -155,6 +156,46 @@ runner.test('findDuplicateGuests returns empty for unique names', function() {
 runner.test('findDuplicateGuests handles multiple duplicate pairs', function() {
     const duplicates = findDuplicateGuests(['Alice', 'Bob', 'alice', 'bob', 'Charlie']);
     runner.assertTrue(duplicates.length >= 2);
+});
+
+// Test validateFixedAssignment function
+runner.test('validateFixedAssignment accepts valid assignment', function() {
+    const guestList = ['Alice', 'Bob', 'Charlie'];
+    const result = validateFixedAssignment('Alice', 'seat-1', guestList, null);
+    runner.assertTrue(result.isValid);
+    runner.assertEquals(result.guestName, 'Alice');
+    runner.assertEquals(result.seatId, 'seat-1');
+});
+
+runner.test('validateFixedAssignment rejects invalid guest name', function() {
+    const guestList = ['Alice', 'Bob', 'Charlie'];
+    
+    const emptyResult = validateFixedAssignment('', 'seat-1', guestList, null);
+    runner.assertFalse(emptyResult.isValid);
+    runner.assertContains(emptyResult.error, 'non-empty string');
+    
+    const nullResult = validateFixedAssignment(null, 'seat-1', guestList, null);
+    runner.assertFalse(nullResult.isValid);
+    runner.assertContains(nullResult.error, 'non-empty string');
+});
+
+runner.test('validateFixedAssignment rejects invalid seat ID', function() {
+    const guestList = ['Alice', 'Bob', 'Charlie'];
+    
+    const emptyResult = validateFixedAssignment('Alice', '', guestList, null);
+    runner.assertFalse(emptyResult.isValid);
+    runner.assertContains(emptyResult.error, 'non-empty string');
+    
+    const nullResult = validateFixedAssignment('Alice', null, guestList, null);
+    runner.assertFalse(nullResult.isValid);
+    runner.assertContains(nullResult.error, 'non-empty string');
+});
+
+runner.test('validateFixedAssignment rejects guest not in list', function() {
+    const guestList = ['Alice', 'Bob', 'Charlie'];
+    const result = validateFixedAssignment('Diana', 'seat-1', guestList, null);
+    runner.assertFalse(result.isValid);
+    runner.assertContains(result.error, 'not in the current guest list');
 });
 
 // Run all tests

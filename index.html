@@ -51,7 +51,35 @@
             
             <section class="constraints">
                 <h2>Constraints</h2>
-                <!-- Constraint inputs will go here -->
+                <div class="drag-drop-section">
+                    <h3>Drag and Drop Assignments</h3>
+                    <p class="instruction-text">Drag guests from the list below to seats on the table to create fixed assignments.</p>
+                    <div id="guest-list-container" class="guest-list-container">
+                        <!-- Draggable guest items will be rendered here -->
+                    </div>
+                </div>
+                
+                <div class="adjacency-constraints-section">
+                    <h3>Adjacency Requirements</h3>
+                    <p class="instruction-text">Select two guests who must sit next to each other.</p>
+                    
+                    <div class="constraint-form">
+                        <div class="constraint-inputs">
+                            <select id="guest-select-a" class="guest-dropdown">
+                                <option value="">Select first guest</option>
+                            </select>
+                            <span class="constraint-connector">must sit near</span>
+                            <select id="guest-select-b" class="guest-dropdown">
+                                <option value="">Select second guest</option>
+                            </select>
+                        </div>
+                        <button type="button" id="add-constraint-btn" class="add-constraint-btn" disabled>Add Constraint</button>
+                    </div>
+                    
+                    <div id="constraints-list-container" class="constraints-list-container">
+                        <!-- Constraint items will be rendered here -->
+                    </div>
+                </div>
             </section>
             
             <section class="generate-section">
@@ -69,6 +97,8 @@
     <script src="scripts/models.js"></script>
     <script src="scripts/validation.js"></script>
     <script src="scripts/tableRenderer.js"></script>
+    <script src="scripts/dragDrop.js"></script>
+    <script src="scripts/constraintsUI.js"></script>
     <script src="scripts/app.js"></script>
 </body>
 </html>
