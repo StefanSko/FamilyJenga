@@ -864,6 +864,9 @@ function handleGenerateSeating() {
         return; // Validation summary will show the issues
     }
     
+    // Auto-clear previous generated assignments (but keep fixed assignments and constraints)
+    clearPreviousGeneratedAssignments();
+    
     // Show loading state
     setLoadingState(true);
     
