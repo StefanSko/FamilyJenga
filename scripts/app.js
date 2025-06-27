@@ -1495,6 +1495,41 @@ function updateGenerateButtonState(isValid) {
     }
 }
 
+// Helper function to wait for SVG rendering completion
+function waitForSVGRenderComplete() {
+    return new Promise(resolve => {
+        const checkRender = () => {
+            if (currentSeatElements && Object.keys(currentSeatElements).length > 0) {
+                console.log('SVG render complete - currentSeatElements populated with', Object.keys(currentSeatElements).length, 'seats');
+                resolve();
+            } else {
+                console.log('Waiting for SVG render completion...');
+                setTimeout(checkRender, 10);
+            }
+        };
+        checkRender();
+    });
+}
+
+// Helper function to apply fixed assignment visuals
+async function applyFixedAssignmentVisuals(fixedAssignments) {
+    console.log('Applying fixed assignment visuals...');
+    console.log('currentSeatElements available:', Boolean(currentSeatElements));
+    if (currentSeatElements) {
+        console.log('Available seat IDs:', Object.keys(currentSeatElements));
+    }
+    
+    Object.entries(fixedAssignments).forEach(([seatId, guestName]) => {
+        console.log(`Updating seat ${seatId} with guest ${guestName}`);
+        if (currentSeatElements && currentSeatElements[seatId]) {
+            console.log(`Found seat element for seat ${seatId}, updating display`);
+            updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+        } else {
+            console.warn(`No seat element found for seat ${seatId}`);
+        }
+    });
+}
+
 // Clear All functionality
 function handleClearAll() {
     console.log('Clear All button clicked');
@@ -1639,7 +1674,7 @@ function handleImportConfig(event) {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const config = JSON.parse(e.target.result);
             
@@ -1685,6 +1720,8 @@ function handleImportConfig(event) {
                 
                 // Apply fixed assignments AFTER table is rendered
                 if (config.fixedAssignments && fixedAssignmentManager) {
+                    console.log('Processing fixed assignments import...');
+                    
                     // Clear existing assignments first
                     const existingAssignments = fixedAssignmentManager.getAllAssignments();
                     Object.keys(existingAssignments).forEach(seatId => {
@@ -1696,24 +1733,12 @@ function handleImportConfig(event) {
                         fixedAssignmentManager.addAssignment(guestName, seatId);
                     });
                     
-                    // Update visuals after a short delay to ensure table is rendered
-                    setTimeout(() => {
-                        console.log('Updating seat visuals for fixed assignments...');
-                        console.log('currentSeatElements available:', Boolean(currentSeatElements));
-                        if (currentSeatElements) {
-                            console.log('Available seat IDs:', Object.keys(currentSeatElements));
-                        }
-                        
-                        Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                            console.log(`Trying to update seat ${seatId} with guest ${guestName}`);
-                            if (currentSeatElements && currentSeatElements[seatId]) {
-                                console.log(`Found seat element for seat ${seatId}, updating display`);
-                                updateSeatDisplay(currentSeatElements[seatId], guestName, true);
-                            } else {
-                                console.warn(`No seat element found for seat ${seatId}`);
-                            }
-                        });
-                    }, 100);
+                    // Wait for SVG rendering to complete before applying visual updates
+                    console.log('Waiting for SVG rendering completion before applying visuals...');
+                    await waitForSVGRenderComplete();
+                    
+                    // Apply visual updates now that SVG is ready
+                    await applyFixedAssignmentVisuals(config.fixedAssignments);
                 }
             }
             
