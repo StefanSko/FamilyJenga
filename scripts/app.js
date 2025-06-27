@@ -15,6 +15,8 @@ let currentSeatingArrangement = null;
 // eslint-disable-next-line no-unused-vars
 let currentSeatElements = null;
 // eslint-disable-next-line no-unused-vars
+let isImporting = false; // Flag to prevent clearing during import
+// eslint-disable-next-line no-unused-vars
 let currentAssignedGuests = [];
 // eslint-disable-next-line no-unused-vars
 let fixedAssignmentManager = null;
@@ -293,16 +295,22 @@ function handleGuestListChange() {
         currentGuestList = guestResult.guests;
         console.log('Updated guest list:', currentGuestList);
         
-        // Clear any existing assignments when guest list changes
-        currentAssignedGuests = [];
-        fixedAssignmentManager.clearAllAssignments();
-        
-        // Clear any seat displays
-        if (currentSeatElements) {
-            Object.values(currentSeatElements).forEach(seatElement => {
-                // eslint-disable-next-line no-undef
-                updateSeatDisplay(seatElement, null, false);
-            });
+        // Only clear assignments and seats if not importing
+        if (!isImporting) {
+            console.log('Clearing assignments because guest list changed (not during import)');
+            // Clear any existing assignments when guest list changes
+            currentAssignedGuests = [];
+            fixedAssignmentManager.clearAllAssignments();
+            
+            // Clear any seat displays
+            if (currentSeatElements) {
+                Object.values(currentSeatElements).forEach(seatElement => {
+                    // eslint-disable-next-line no-undef
+                    updateSeatDisplay(seatElement, null, false);
+                });
+            }
+        } else {
+            console.log('Skipping assignment clearing because we are importing');
         }
         
         // Update draggable guest list
@@ -1520,9 +1528,19 @@ async function applyFixedAssignmentVisuals(fixedAssignments) {
     }
     
     Object.entries(fixedAssignments).forEach(([seatId, guestName]) => {
-        console.log(`Updating seat ${seatId} with guest ${guestName}`);
+        console.log(`Processing seat ${seatId}:`, {
+            seatId: seatId,
+            guestName: guestName,
+            guestNameType: typeof guestName,
+            guestNameValue: JSON.stringify(guestName)
+        });
+        
         if (currentSeatElements && currentSeatElements[seatId]) {
-            console.log(`Found seat element for seat ${seatId}, updating display`);
+            console.log(`Found seat element for seat ${seatId}, calling updateSeatDisplay with:`, {
+                seatElement: currentSeatElements[seatId],
+                guestName: guestName,
+                isFixed: true
+            });
             updateSeatDisplay(currentSeatElements[seatId], guestName, true);
         } else {
             console.warn(`No seat element found for seat ${seatId}`);
@@ -1676,6 +1694,10 @@ function handleImportConfig(event) {
     const reader = new FileReader();
     reader.onload = async function(e) {
         try {
+            // Set import flag to prevent clearing of assignments during guest list update
+            isImporting = true;
+            console.log('Starting import - setting isImporting flag to true');
+            
             const config = JSON.parse(e.target.result);
             
             // Validate config structure
@@ -1717,38 +1739,47 @@ function handleImportConfig(event) {
                 console.log('Calling handleTableInputChange...');
                 handleTableInputChange();
                 console.log('Table rendering completed');
-                
-                // Apply fixed assignments AFTER table is rendered
-                if (config.fixedAssignments && fixedAssignmentManager) {
-                    console.log('Processing fixed assignments import...');
-                    
-                    // Clear existing assignments first
-                    const existingAssignments = fixedAssignmentManager.getAllAssignments();
-                    Object.keys(existingAssignments).forEach(seatId => {
-                        handleRemoveAssignment(seatId);
-                    });
-                    
-                    // Add imported assignments to data structures
-                    Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                        fixedAssignmentManager.addAssignment(guestName, seatId);
-                    });
-                    
-                    // Wait for SVG rendering to complete before applying visual updates
-                    console.log('Waiting for SVG rendering completion before applying visuals...');
-                    await waitForSVGRenderComplete();
-                    
-                    // Apply visual updates now that SVG is ready
-                    await applyFixedAssignmentVisuals(config.fixedAssignments);
-                }
             }
             
-            // Apply guest list
+            // Apply guest list FIRST - fixed assignments may depend on guest list
             if (config.guestList) {
+                console.log('Importing guest list...');
                 const guestListInput = document.getElementById('guest-list-input');
                 if (guestListInput) {
                     guestListInput.value = config.guestList.join('\n');
                     guestListInput.dispatchEvent(new Event('input'));
                 }
+            }
+            
+            // Apply fixed assignments AFTER guest list and table are ready
+            if (config.fixedAssignments && fixedAssignmentManager && config.tableConfig) {
+                console.log('Processing fixed assignments import...');
+                console.log('Fixed assignments to import:', config.fixedAssignments);
+                
+                // Clear existing assignments first
+                const existingAssignments = fixedAssignmentManager.getAllAssignments();
+                Object.keys(existingAssignments).forEach(seatId => {
+                    handleRemoveAssignment(seatId);
+                });
+                
+                // Add imported assignments to data structures
+                Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
+                    console.log(`Adding assignment: seat ${seatId} -> guest ${guestName}`);
+                    fixedAssignmentManager.addAssignment(guestName, seatId);
+                });
+                
+                // Verify assignments were added correctly
+                const verifyAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Assignments after import:', verifyAssignments);
+                
+                // Wait for SVG rendering to complete before applying visual updates
+                console.log('Waiting for SVG rendering completion before applying visuals...');
+                await waitForSVGRenderComplete();
+                
+                // Apply visual updates now that SVG is ready - use manager data to ensure consistency
+                const currentAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Current assignments from manager for visual update:', currentAssignments);
+                await applyFixedAssignmentVisuals(currentAssignments);
             }
             
             // Apply adjacency constraints
@@ -1781,6 +1812,10 @@ function handleImportConfig(event) {
             if (errorDisplay) {
                 errorDisplay.showError('Import failed: ' + error.message, statusMessages);
             }
+        } finally {
+            // Always clear the import flag
+            isImporting = false;
+            console.log('Import completed - setting isImporting flag to false');
         }
     };
     
