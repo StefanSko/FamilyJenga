@@ -1251,6 +1251,13 @@ function getSpinnerStateHistory() {
 
 // Add page interaction listeners to detect stuck spinner
 document.addEventListener('DOMContentLoaded', function() {
+    // Ensure spinner is hidden on page load
+    const loadingSpinner = document.getElementById('loading-spinner');
+    if (loadingSpinner) {
+        loadingSpinner.classList.add('hidden');
+        console.log('[SPINNER] Ensured spinner is hidden on page load');
+    }
+    
     // Add click listener to detect user interactions that might indicate stuck spinner
     document.addEventListener('click', function() {
         // Only check if spinner is currently active
