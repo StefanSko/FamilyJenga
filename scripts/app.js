@@ -1752,21 +1752,29 @@ function handleImportConfig(event) {
             }
             
             // Apply fixed assignments AFTER guest list and table are ready
-            if (config.fixedAssignments && fixedAssignmentManager && config.tableConfig) {
+            if (config.fixedAssignments !== undefined && fixedAssignmentManager && config.tableConfig) {
                 console.log('Processing fixed assignments import...');
                 console.log('Fixed assignments to import:', config.fixedAssignments);
                 
+                const assignmentEntries = Object.entries(config.fixedAssignments);
+                console.log(`Found ${assignmentEntries.length} fixed assignments to import`);
+                
                 // Clear existing assignments first
                 const existingAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Clearing existing assignments:', existingAssignments);
                 Object.keys(existingAssignments).forEach(seatId => {
                     handleRemoveAssignment(seatId);
                 });
                 
-                // Add imported assignments to data structures
-                Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                    console.log(`Adding assignment: seat ${seatId} -> guest ${guestName}`);
-                    fixedAssignmentManager.addAssignment(guestName, seatId);
-                });
+                // Add imported assignments to data structures (if any)
+                if (assignmentEntries.length > 0) {
+                    assignmentEntries.forEach(([seatId, guestName]) => {
+                        console.log(`Adding assignment: seat ${seatId} -> guest ${guestName}`);
+                        fixedAssignmentManager.addAssignment(guestName, seatId);
+                    });
+                } else {
+                    console.log('No fixed assignments to import (empty object)');
+                }
                 
                 // Verify assignments were added correctly
                 const verifyAssignments = fixedAssignmentManager.getAllAssignments();
@@ -1779,7 +1787,17 @@ function handleImportConfig(event) {
                 // Apply visual updates now that SVG is ready - use manager data to ensure consistency
                 const currentAssignments = fixedAssignmentManager.getAllAssignments();
                 console.log('Current assignments from manager for visual update:', currentAssignments);
-                await applyFixedAssignmentVisuals(currentAssignments);
+                if (Object.keys(currentAssignments).length > 0) {
+                    await applyFixedAssignmentVisuals(currentAssignments);
+                } else {
+                    console.log('No assignments to apply visually');
+                }
+            } else {
+                console.log('Skipping fixed assignments import - missing requirements:', {
+                    hasFixedAssignments: config.fixedAssignments !== undefined,
+                    hasFixedAssignmentManager: Boolean(fixedAssignmentManager),
+                    hasTableConfig: Boolean(config.tableConfig)
+                });
             }
             
             // Apply adjacency constraints
