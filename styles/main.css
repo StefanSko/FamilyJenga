@@ -527,6 +527,10 @@ label {
     display: none;
 }
 
+.loading-spinner.hidden {
+    display: none;
+}
+
 /* Drag and Drop Styling */
 
 /* Drag and Drop Section */
@@ -1114,8 +1118,11 @@ label {
     border: 2px solid #ecf0f1;
     border-left: 2px solid #3498db;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
     margin-right: 0.5rem;
+}
+
+.loading-spinner:not(.hidden) .spinner-icon {
+    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {

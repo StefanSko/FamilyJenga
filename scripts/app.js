@@ -854,23 +854,32 @@ function initializeGenerateButton() {
 }
 
 function handleGenerateSeating() {
-    console.log('Generate seating button clicked');
-    
-    // Clear previous status messages
-    clearStatusMessages();
-    
-    // Use comprehensive validation summary
-    if (!showValidationSummary()) {
-        return; // Validation summary will show the issues
-    }
-    
-    // Auto-clear previous generated assignments (but keep fixed assignments and constraints)
-    clearPreviousGeneratedAssignments();
-    
-    // Show loading state
-    setLoadingState(true);
+    const logPrefix = '[GENERATION]';
+    console.log(`${logPrefix} Generate seating button clicked`);
     
     try {
+        // Clear previous status messages
+        clearStatusMessages();
+        
+        // Use comprehensive validation summary
+        if (!showValidationSummary()) {
+            console.log(`${logPrefix} Validation failed - aborting generation`);
+            return; // Validation summary will show the issues
+        }
+        
+        // Auto-clear previous generated assignments (but keep fixed assignments and constraints)
+        clearPreviousGeneratedAssignments();
+        
+        // Show loading state with timeout failsafe
+        console.log(`${logPrefix} Starting generation process`);
+        const spinnerStarted = setLoadingStateWithTimeout(true, 'generation-start', 30000);
+        
+        if (!spinnerStarted) {
+            console.error(`${logPrefix} Failed to start spinner - aborting generation`);
+            showGenerationError('Failed to initialize generation process. Please refresh the page and try again.', []);
+            return;
+        }
+        
         // Get current state
         const guests = [...currentGuestList];
         const tableConfig = currentTableConfig;
@@ -878,39 +887,87 @@ function handleGenerateSeating() {
         const adjacencyConstraints = adjacencyConstraintManager.getAllConstraints();
         const adjacencyMap = currentAdjacencyMap;
         
-        console.log('Generating seating with:', {
+        console.log(`${logPrefix} Generating seating with:`, {
             guests: guests.length,
             totalSeats: tableConfig.totalSeats,
             fixedAssignments: Object.keys(fixedAssignments).length,
             adjacencyConstraints: adjacencyConstraints.length
         });
         
-        // Call generation algorithm
-        // eslint-disable-next-line no-undef
-        const result = generateSeating(guests, tableConfig, fixedAssignments, adjacencyConstraints, adjacencyMap);
+        // Validate inputs before calling generation algorithm
+        if (guests.length === 0) {
+            setLoadingState(false, 'generation-no-guests');
+            showGenerationError('No guests available for seating generation.', []);
+            return;
+        }
         
-        console.log('Generation result:', result);
+        if (!tableConfig || tableConfig.totalSeats === 0) {
+            setLoadingState(false, 'generation-no-table');
+            showGenerationError('No table configuration available for seating generation.', []);
+            return;
+        }
         
-        // Hide loading state
-        setLoadingState(false);
+        // Call generation algorithm with additional error handling
+        let result;
+        try {
+            console.log(`${logPrefix} Calling generation algorithm`);
+            // eslint-disable-next-line no-undef
+            result = generateSeating(guests, tableConfig, fixedAssignments, adjacencyConstraints, adjacencyMap);
+            console.log(`${logPrefix} Generation algorithm completed:`, result);
+        } catch (generationError) {
+            console.error(`${logPrefix} Generation algorithm threw error:`, generationError);
+            setLoadingState(false, 'generation-algorithm-error');
+            showGenerationError('Generation algorithm failed: ' + generationError.message, []);
+            return;
+        }
+        
+        // Validate result from generation algorithm
+        if (!result) {
+            console.error(`${logPrefix} Generation algorithm returned null/undefined result`);
+            setLoadingState(false, 'generation-null-result');
+            showGenerationError('Generation algorithm returned invalid result. Please try again.', []);
+            return;
+        }
+        
+        // Hide loading state - generation completed
+        setLoadingState(false, 'generation-complete');
         
         if (result.success) {
+            console.log(`${logPrefix} Generation successful`);
             // Display results
             displayGeneratedSeating(result.arrangement);
             showGenerationSuccess(result.arrangement);
         } else {
+            console.log(`${logPrefix} Generation failed:`, result.error);
             // Display errors
             showGenerationError(result.error, result.unmetConstraints || []);
             
             // Show partial solution if available
             if (result.arrangement && result.arrangement.size > 0) {
+                console.log(`${logPrefix} Displaying partial solution`);
                 displayGeneratedSeating(result.arrangement);
             }
         }
         
     } catch (error) {
-        console.error('Error during generation:', error);
-        setLoadingState(false);
+        console.error(`${logPrefix} Unexpected error during generation:`, error);
+        
+        // Ensure spinner is hidden on any error
+        try {
+            setLoadingState(false, 'generation-unexpected-error');
+        } catch (spinnerError) {
+            console.error(`${logPrefix} Failed to hide spinner after error:`, spinnerError);
+            // Last resort - try direct DOM manipulation
+            try {
+                const spinner = document.getElementById('loading-spinner');
+                if (spinner) {
+                    spinner.classList.add('hidden');
+                }
+            } catch (domError) {
+                console.error(`${logPrefix} Direct DOM manipulation failed:`, domError);
+            }
+        }
+        
         showGenerationError('An unexpected error occurred during generation: ' + error.message, []);
     }
 }
@@ -945,7 +1002,7 @@ function displayGeneratedSeating(arrangement) {
 }
 
 function clearPreviousGeneratedAssignments() {
-    console.log('clearPreviousGeneratedAssignments called, currentSeatElements:', !!currentSeatElements);
+    console.log('clearPreviousGeneratedAssignments called, currentSeatElements:', Boolean(currentSeatElements));
     
     if (!currentSeatElements) {
         console.log('No currentSeatElements, trying to find seats in DOM');
@@ -1007,29 +1064,214 @@ function showGenerationError(error, unmetConstraints) {
     showStatusMessage(message, 'error');
 }
 
-function setLoadingState(isLoading) {
+// ABOUTME: Enhanced spinner state management with comprehensive error handling and debug logging
+// ABOUTME: Includes failsafe mechanisms to prevent spinner from getting stuck in loading state
+
+// Global state tracking for spinner management
+let currentSpinnerState = false;
+let spinnerTimeoutId = null;
+const spinnerStateHistory = [];
+
+function setLoadingState(isLoading, context = 'unknown') {
+    const timestamp = new Date().toISOString();
+    const logPrefix = '[SPINNER]';
+    
+    console.log(`${logPrefix} ${timestamp} Setting loading state to: ${isLoading} (context: ${context})`);
+    
+    // Track state history for debugging
+    spinnerStateHistory.push({
+        timestamp,
+        isLoading,
+        context,
+        previousState: currentSpinnerState
+    });
+    
+    // Keep only last 10 state changes
+    if (spinnerStateHistory.length > 10) {
+        spinnerStateHistory.shift();
+    }
+    
     const generateBtn = document.querySelector('.generate-btn');
     const loadingSpinner = document.getElementById('loading-spinner');
     
-    if (generateBtn) {
-        generateBtn.disabled = isLoading;
-        if (isLoading) {
-            generateBtn.classList.add('loading');
-            generateBtn.textContent = 'Generate Seating';
-        } else {
-            generateBtn.classList.remove('loading');
-            generateBtn.textContent = 'Generate Seating';
-        }
+    // Validation - ensure DOM elements exist
+    if (!loadingSpinner) {
+        console.error(`${logPrefix} Loading spinner element not found in DOM`);
+        return false;
     }
     
-    if (loadingSpinner) {
+    try {
+        // Update button state
+        if (generateBtn) {
+            generateBtn.disabled = isLoading;
+            if (isLoading) {
+                generateBtn.classList.add('loading');
+                generateBtn.textContent = 'Generate Seating';
+            } else {
+                generateBtn.classList.remove('loading');
+                generateBtn.textContent = 'Generate Seating';
+            }
+        } else {
+            console.warn(`${logPrefix} Generate button not found in DOM`);
+        }
+        
+        // Update spinner state
         if (isLoading) {
             loadingSpinner.classList.remove('hidden');
         } else {
             loadingSpinner.classList.add('hidden');
         }
+        
+        // Verify state was applied correctly
+        const isVisible = !loadingSpinner.classList.contains('hidden');
+        if (isVisible !== isLoading) {
+            console.error(`${logPrefix} State mismatch! Expected: ${isLoading}, Actual: ${isVisible}`);
+            // Attempt to fix the mismatch
+            if (isLoading) {
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+        
+        // Update global state tracking
+        currentSpinnerState = isLoading;
+        
+        console.log(`${logPrefix} State successfully set to: ${isLoading}`);
+        return true;
+        
+    } catch (error) {
+        console.error(`${logPrefix} Error applying state change:`, error);
+        // Defensive programming - try to hide spinner on error
+        try {
+            if (loadingSpinner) {
+                loadingSpinner.classList.add('hidden');
+            }
+        } catch (recoveryError) {
+            console.error(`${logPrefix} Recovery attempt failed:`, recoveryError);
+        }
+        return false;
     }
 }
+
+function setLoadingStateWithTimeout(isLoading, context = 'unknown', maxDuration = 30000) {
+    const logPrefix = '[SPINNER-TIMEOUT]';
+    
+    console.log(`${logPrefix} Setting loading state with timeout: ${isLoading} (context: ${context}, maxDuration: ${maxDuration}ms)`);
+    
+    // Set the loading state
+    const success = setLoadingState(isLoading, context);
+    
+    if (isLoading && success) {
+        // Clear any existing timeout
+        if (spinnerTimeoutId) {
+            console.log(`${logPrefix} Clearing existing timeout`);
+            clearTimeout(spinnerTimeoutId);
+        }
+        
+        // Set failsafe timeout
+        spinnerTimeoutId = setTimeout(() => {
+            console.warn(`${logPrefix} Failsafe timeout triggered after ${maxDuration}ms - forcing spinner off`);
+            setLoadingState(false, 'failsafe-timeout');
+            spinnerTimeoutId = null;
+            
+            // Show user notification about timeout
+            showStatusMessage('Generation took longer than expected and was stopped. Please try again.', 'warning');
+        }, maxDuration);
+        
+        console.log(`${logPrefix} Failsafe timeout set for ${maxDuration}ms`);
+    } else if (!isLoading) {
+        // Clear timeout when manually stopping
+        if (spinnerTimeoutId) {
+            console.log(`${logPrefix} Clearing timeout on manual stop`);
+            clearTimeout(spinnerTimeoutId);
+            spinnerTimeoutId = null;
+        }
+    }
+    
+    return success;
+}
+
+// Function to validate current spinner state
+function validateSpinnerState() {
+    const logPrefix = '[SPINNER-VALIDATION]';
+    const loadingSpinner = document.getElementById('loading-spinner');
+    
+    if (!loadingSpinner) {
+        console.error(`${logPrefix} Spinner element not found`);
+        return false;
+    }
+    
+    const isVisible = !loadingSpinner.classList.contains('hidden');
+    const stateMatch = isVisible === currentSpinnerState;
+    
+    console.log(`${logPrefix} Spinner validation - Expected: ${currentSpinnerState}, Actual: ${isVisible}, Match: ${stateMatch}`);
+    
+    if (!stateMatch) {
+        console.warn(`${logPrefix} State mismatch detected! Attempting recovery...`);
+        return setLoadingState(currentSpinnerState, 'validation-recovery');
+    }
+    
+    return true;
+}
+
+// Function to reset spinner state in case of issues
+// eslint-disable-next-line no-unused-vars
+function resetSpinnerState() {
+    const logPrefix = '[SPINNER-RESET]';
+    console.log(`${logPrefix} Resetting spinner state`);
+    
+    // Clear any existing timeout
+    if (spinnerTimeoutId) {
+        clearTimeout(spinnerTimeoutId);
+        spinnerTimeoutId = null;
+    }
+    
+    // Force spinner off
+    const success = setLoadingState(false, 'manual-reset');
+    
+    if (success) {
+        console.log(`${logPrefix} Spinner state reset successfully`);
+    } else {
+        console.error(`${logPrefix} Failed to reset spinner state`);
+    }
+    
+    return success;
+}
+
+// Function to get spinner state history for debugging
+// eslint-disable-next-line no-unused-vars
+function getSpinnerStateHistory() {
+    return {
+        currentState: currentSpinnerState,
+        hasActiveTimeout: Boolean(spinnerTimeoutId),
+        history: [...spinnerStateHistory]
+    };
+}
+
+// Add page interaction listeners to detect stuck spinner
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure spinner is hidden on page load
+    const loadingSpinner = document.getElementById('loading-spinner');
+    if (loadingSpinner) {
+        loadingSpinner.classList.add('hidden');
+        console.log('[SPINNER] Ensured spinner is hidden on page load');
+    }
+    
+    // Add click listener to detect user interactions that might indicate stuck spinner
+    document.addEventListener('click', function() {
+        // Only check if spinner is currently active
+        if (currentSpinnerState) {
+            // Allow 1 second for legitimate operations to complete
+            setTimeout(() => {
+                if (currentSpinnerState) {
+                    console.warn('[SPINNER] Spinner still active after user interaction - validating state');
+                    validateSpinnerState();
+                }
+            }, 1000);
+        }
+    });
+});
 
 function showStatusMessage(message, type) {
     const statusContainer = document.getElementById('status-messages');
@@ -1265,10 +1507,10 @@ function handleClearAll() {
     
     if (!topSeats || !rightSeats || !bottomSeats || !leftSeats) {
         console.error('Clear All: Cannot find seat input elements', {
-            topSeats: !!topSeats,
-            rightSeats: !!rightSeats, 
-            bottomSeats: !!bottomSeats,
-            leftSeats: !!leftSeats
+            topSeats: Boolean(topSeats),
+            rightSeats: Boolean(rightSeats), 
+            bottomSeats: Boolean(bottomSeats),
+            leftSeats: Boolean(leftSeats)
         });
         return;
     }
@@ -1295,7 +1537,7 @@ function handleClearAll() {
     // Clear all fixed assignments
     if (fixedAssignmentManager) {
         const allAssignments = fixedAssignmentManager.getAllAssignments();
-        Object.entries(allAssignments).forEach(([seatId, guest]) => {
+        Object.entries(allAssignments).forEach(([seatId]) => {
             handleRemoveAssignment(seatId);
         });
     }
@@ -1457,7 +1699,7 @@ function handleImportConfig(event) {
                     // Update visuals after a short delay to ensure table is rendered
                     setTimeout(() => {
                         console.log('Updating seat visuals for fixed assignments...');
-                        console.log('currentSeatElements available:', !!currentSeatElements);
+                        console.log('currentSeatElements available:', Boolean(currentSeatElements));
                         if (currentSeatElements) {
                             console.log('Available seat IDs:', Object.keys(currentSeatElements));
                         }
