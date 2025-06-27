@@ -1815,13 +1815,17 @@ function handleImportConfig(event) {
                 
                 // Update constraints UI
                 // eslint-disable-next-line no-undef
-                renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list'));
+                renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list-container'));
             }
             
             // Show success message
+            console.log('Import completed successfully!');
             const statusMessages = document.getElementById('status-messages');
             if (errorDisplay) {
                 errorDisplay.showSuccess('Configuration imported successfully', statusMessages);
+                console.log('Success message displayed');
+            } else {
+                console.warn('errorDisplay not available for success message');
             }
             
         } catch (error) {
