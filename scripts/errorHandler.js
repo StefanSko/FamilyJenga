@@ -84,6 +84,16 @@ class ErrorDisplay {
     }
     
     /**
+     * Show a warning message (convenience method)
+     * @param {string} message - The warning message to display
+     * @param {HTMLElement} targetElement - The element to display the message in
+     * @returns {HTMLElement} The created message element
+     */
+    showWarning(message, targetElement) {
+        return this.showError(message, 'warning', targetElement);
+    }
+    
+    /**
      * Clear all error messages from the target element
      * @param {HTMLElement} targetElement - The element to clear messages from
      */
