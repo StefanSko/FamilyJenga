@@ -42,10 +42,13 @@ function initializeApp() {
     // Initialize fixed assignment manager as required by Prompt 7
     // eslint-disable-next-line no-undef
     fixedAssignmentManager = new FixedAssignmentManager();
+    console.log('DEBUGGING: fixedAssignmentManager initialized:', Boolean(fixedAssignmentManager));
+    console.log('DEBUGGING: fixedAssignmentManager type:', typeof fixedAssignmentManager);
     
     // Initialize adjacency constraint manager as required by Prompt 10
     // eslint-disable-next-line no-undef
     adjacencyConstraintManager = new AdjacencyConstraintManager();
+    console.log('DEBUGGING: adjacencyConstraintManager initialized:', Boolean(adjacencyConstraintManager));
     
     // Test models with sample data as required by Prompt 2
     testModels();
@@ -547,9 +550,17 @@ function setupDragDropEventHandlers() {
 }
 
 function handleSeatDrop(guestName, seatId) {
+    // DEBUGGING: Log assignment attempt
+    console.log('=== SEAT ASSIGNMENT DEBUG ===');
+    console.log('Attempting to assign guest:', guestName, 'to seat:', seatId);
+    console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+    console.log('Current guest list:', currentGuestList);
+    console.log('Current assigned guests:', currentAssignedGuests);
+    
     // Validate the assignment using the validation function
     // eslint-disable-next-line no-undef
     const validation = validateFixedAssignment(guestName, seatId, currentGuestList, fixedAssignmentManager);
+    console.log('Validation result:', validation);
     
     if (!validation.isValid) {
         console.error('Assignment validation failed:', validation.error);
@@ -557,8 +568,16 @@ function handleSeatDrop(guestName, seatId) {
         return;
     }
     
+    // DEBUGGING: Log manager state before assignment
+    if (fixedAssignmentManager) {
+        console.log('Manager state before assignment:');
+        console.log('- Current assignments:', fixedAssignmentManager.getAllAssignments());
+        console.log('- Assignment count:', fixedAssignmentManager.getAssignmentCount());
+    }
+    
     // Attempt to add assignment to manager
     const result = fixedAssignmentManager.addAssignment(guestName, seatId);
+    console.log('addAssignment result:', result);
     
     if (!result.success) {
         console.error('Failed to add assignment:', result.error);
@@ -566,7 +585,12 @@ function handleSeatDrop(guestName, seatId) {
         return;
     }
     
+    // DEBUGGING: Log manager state after assignment
+    console.log('Manager state after assignment:');
+    console.log('- Current assignments:', fixedAssignmentManager.getAllAssignments());
+    console.log('- Assignment count:', fixedAssignmentManager.getAssignmentCount());
     console.log('Successfully assigned guest', guestName, 'to seat', seatId);
+    console.log('============================');
     
     // Update assigned guests list for drag and drop filtering
     currentAssignedGuests = Object.values(fixedAssignmentManager.getAllAssignments());
@@ -1643,6 +1667,31 @@ function handleExportConfig() {
     console.log('Export Config button clicked');
     
     try {
+        // DEBUGGING: Log manager state before export
+        console.log('=== EXPORT DEBUG INFORMATION ===');
+        console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+        console.log('fixedAssignmentManager type:', typeof fixedAssignmentManager);
+        
+        if (fixedAssignmentManager) {
+            const assignments = fixedAssignmentManager.getAllAssignments();
+            console.log('getAllAssignments() result:', assignments);
+            console.log('Assignment count:', fixedAssignmentManager.getAssignmentCount());
+            console.log('Assignment object keys:', Object.keys(assignments));
+            console.log('Assignment object values:', Object.values(assignments));
+            
+            // Log internal state for debugging
+            console.log('Manager internal assignments:', fixedAssignmentManager.assignments);
+            console.log('Manager internal guestToSeat:', fixedAssignmentManager.guestToSeat);
+        } else {
+            console.error('fixedAssignmentManager is null or undefined at export time!');
+        }
+        
+        console.log('adjacencyConstraintManager exists:', Boolean(adjacencyConstraintManager));
+        if (adjacencyConstraintManager) {
+            console.log('Adjacency constraints count:', adjacencyConstraintManager.getAllConstraints().length);
+        }
+        console.log('================================');
+        
         // Gather current configuration
         const config = {
             version: '1.0',
@@ -1652,6 +1701,13 @@ function handleExportConfig() {
             fixedAssignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
             adjacencyConstraints: adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : []
         };
+        
+        // DEBUGGING: Log what we're about to export
+        console.log('Configuration being exported:');
+        console.log('- Table config:', config.tableConfig);
+        console.log('- Guest list length:', config.guestList.length);
+        console.log('- Fixed assignments:', config.fixedAssignments);
+        console.log('- Adjacency constraints length:', config.adjacencyConstraints.length);
         
         // Create downloadable file
         const dataStr = JSON.stringify(config, null, 2);
