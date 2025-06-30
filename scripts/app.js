@@ -32,8 +32,44 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
+
+// Helper function to gather all current seat assignments (both fixed and generated)
+function getAllCurrentAssignments() {
+    const allAssignments = {};
+    
+    // Start with fixed assignments from the manager
+    if (fixedAssignmentManager) {
+        const fixedAssignments = fixedAssignmentManager.getAllAssignments();
+        Object.assign(allAssignments, fixedAssignments);
+        console.log('Added fixed assignments:', Object.keys(fixedAssignments).length);
+    }
+    
+    // Add generated assignments from visual display
+    if (currentSeatElements) {
+        Object.entries(currentSeatElements).forEach(([seatId, element]) => {
+            // Only add if not already in fixed assignments and has assignment
+            if (!allAssignments[seatId] && element.classList.contains('generated-assignment')) {
+                // Extract guest name from the seat display
+                const seatNumberElement = element.querySelector('.seat-number');
+                if (seatNumberElement) {
+                    const fullText = seatNumberElement.textContent || '';
+                    // Remove the seat number prefix (e.g., "1test3" -> "test3")
+                    const guestName = fullText.replace(/^\d+/, '');
+                    if (guestName && guestName.trim()) {
+                        allAssignments[seatId] = guestName.trim();
+                        console.log(`Added generated assignment: seat ${seatId} -> ${guestName.trim()}`);
+                    }
+                }
+            }
+        });
+    }
+    
+    console.log('Total assignments for export:', Object.keys(allAssignments).length);
+    return allAssignments;
+}
+
 function initializeApp() {
-    console.log('Application initialized successfully');
+    console.log('Initializing application...');
     
     // Initialize error display system as required by Prompt 13
     // eslint-disable-next-line no-undef
@@ -60,10 +96,33 @@ function initializeApp() {
             console.log('Assignment count:', fixedAssignmentManager.getAssignmentCount());
             console.log('Assignment keys:', Object.keys(assignments));
             console.log('Assignment values:', Object.values(assignments));
+            console.log('Manager internal state:');
+            console.log('- Internal assignments:', fixedAssignmentManager.assignments);
+            console.log('- Internal guestToSeat:', fixedAssignmentManager.guestToSeat);
         }
         console.log('currentGuestList:', currentGuestList);
         console.log('currentAssignedGuests:', currentAssignedGuests);
+        
+        // Also check the visual state
+        if (currentSeatElements) {
+            console.log('Visual seat states:');
+            Object.entries(currentSeatElements).forEach(([seatId, element]) => {
+                const hasFixed = element.classList.contains('fixed-assignment');
+                const hasGenerated = element.classList.contains('generated-assignment');
+                const textContent = element.textContent || '';
+                if (hasFixed || hasGenerated || textContent.trim()) {
+                    console.log(`- Seat ${seatId}: fixed=${hasFixed}, generated=${hasGenerated}, text="${textContent.trim()}"`);
+                }
+            });
+        }
         console.log('==============================');
+        return {
+            managerExists: Boolean(fixedAssignmentManager),
+            assignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+            assignmentCount: fixedAssignmentManager ? fixedAssignmentManager.getAssignmentCount() : 0,
+            guestList: currentGuestList,
+            assignedGuests: currentAssignedGuests
+        };
     };
     console.log('💡 Debug tip: Type debugAssignments() in console to check assignment state');
     
@@ -1710,12 +1769,13 @@ function handleExportConfig() {
         console.log('================================');
         
         // Gather current configuration
+        const allAssignments = getAllCurrentAssignments();
         const config = {
             version: '1.0',
             timestamp: new Date().toISOString(),
             tableConfig: currentTableConfig,
             guestList: [...currentGuestList],
-            fixedAssignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+            fixedAssignments: allAssignments,
             adjacencyConstraints: adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : []
         };
         
@@ -1730,7 +1790,7 @@ function handleExportConfig() {
         if (Object.keys(config.fixedAssignments).length === 0) {
             console.warn('⚠️  WARNING: No seat assignments found for export!');
             console.warn('This means either:');
-            console.warn('1. No guests have been assigned to seats via drag & drop');
+            console.warn('1. No guests have been assigned to seats via drag & drop or Generate Seating');
             console.warn('2. Assignments were created but lost due to guest list changes');
             console.warn('3. There is a bug in the assignment creation workflow');
             
@@ -1738,10 +1798,12 @@ function handleExportConfig() {
             const statusMessages = document.getElementById('status-messages');
             if (errorDisplay) {
                 errorDisplay.showWarning(
-                    'Export Warning: No seat assignments found. Make sure you have assigned guests to seats using drag & drop before exporting.',
+                    'Export Warning: No seat assignments found. Make sure you have assigned guests to seats using drag & drop or Generate Seating before exporting.',
                     statusMessages
                 );
             }
+        } else {
+            console.log(`✅ Exporting ${Object.keys(config.fixedAssignments).length} seat assignments (fixed + generated)`);
         }
         
         // Create downloadable file
