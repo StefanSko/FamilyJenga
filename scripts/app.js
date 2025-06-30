@@ -50,6 +50,23 @@ function initializeApp() {
     adjacencyConstraintManager = new AdjacencyConstraintManager();
     console.log('DEBUGGING: adjacencyConstraintManager initialized:', Boolean(adjacencyConstraintManager));
     
+    // Add global debug function for troubleshooting
+    window.debugAssignments = function() {
+        console.log('=== ASSIGNMENT DEBUG INFO ===');
+        console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+        if (fixedAssignmentManager) {
+            const assignments = fixedAssignmentManager.getAllAssignments();
+            console.log('Current assignments:', assignments);
+            console.log('Assignment count:', fixedAssignmentManager.getAssignmentCount());
+            console.log('Assignment keys:', Object.keys(assignments));
+            console.log('Assignment values:', Object.values(assignments));
+        }
+        console.log('currentGuestList:', currentGuestList);
+        console.log('currentAssignedGuests:', currentAssignedGuests);
+        console.log('==============================');
+    };
+    console.log('💡 Debug tip: Type debugAssignments() in console to check assignment state');
+    
     // Test models with sample data as required by Prompt 2
     testModels();
     
@@ -1708,6 +1725,24 @@ function handleExportConfig() {
         console.log('- Guest list length:', config.guestList.length);
         console.log('- Fixed assignments:', config.fixedAssignments);
         console.log('- Adjacency constraints length:', config.adjacencyConstraints.length);
+        
+        // Add user warning if no assignments are being exported
+        if (Object.keys(config.fixedAssignments).length === 0) {
+            console.warn('⚠️  WARNING: No seat assignments found for export!');
+            console.warn('This means either:');
+            console.warn('1. No guests have been assigned to seats via drag & drop');
+            console.warn('2. Assignments were created but lost due to guest list changes');
+            console.warn('3. There is a bug in the assignment creation workflow');
+            
+            // Show user-friendly warning
+            const statusMessages = document.getElementById('status-messages');
+            if (errorDisplay) {
+                errorDisplay.showWarning(
+                    'Export Warning: No seat assignments found. Make sure you have assigned guests to seats using drag & drop before exporting.',
+                    statusMessages
+                );
+            }
+        }
         
         // Create downloadable file
         const dataStr = JSON.stringify(config, null, 2);
