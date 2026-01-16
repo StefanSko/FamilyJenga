@@ -15,6 +15,8 @@ let currentSeatingArrangement = null;
 // eslint-disable-next-line no-unused-vars
 let currentSeatElements = null;
 // eslint-disable-next-line no-unused-vars
+let isImporting = false; // Flag to prevent clearing during import
+// eslint-disable-next-line no-unused-vars
 let currentAssignedGuests = [];
 // eslint-disable-next-line no-unused-vars
 let fixedAssignmentManager = null;
@@ -30,8 +32,44 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
 });
 
+
+// Helper function to gather all current seat assignments (both fixed and generated)
+function getAllCurrentAssignments() {
+    const allAssignments = {};
+    
+    // Start with fixed assignments from the manager
+    if (fixedAssignmentManager) {
+        const fixedAssignments = fixedAssignmentManager.getAllAssignments();
+        Object.assign(allAssignments, fixedAssignments);
+        console.log('Added fixed assignments:', Object.keys(fixedAssignments).length);
+    }
+    
+    // Add generated assignments from visual display
+    if (currentSeatElements) {
+        Object.entries(currentSeatElements).forEach(([seatId, element]) => {
+            // Only add if not already in fixed assignments and has assignment
+            if (!allAssignments[seatId] && element.classList.contains('generated-assignment')) {
+                // Extract guest name from the seat display
+                const seatNumberElement = element.querySelector('.seat-number');
+                if (seatNumberElement) {
+                    const fullText = seatNumberElement.textContent || '';
+                    // Remove the seat number prefix (e.g., "1test3" -> "test3")
+                    const guestName = fullText.replace(/^\d+/, '');
+                    if (guestName && guestName.trim()) {
+                        allAssignments[seatId] = guestName.trim();
+                        console.log(`Added generated assignment: seat ${seatId} -> ${guestName.trim()}`);
+                    }
+                }
+            }
+        });
+    }
+    
+    console.log('Total assignments for export:', Object.keys(allAssignments).length);
+    return allAssignments;
+}
+
 function initializeApp() {
-    console.log('Application initialized successfully');
+    console.log('Initializing application...');
     
     // Initialize error display system as required by Prompt 13
     // eslint-disable-next-line no-undef
@@ -40,10 +78,53 @@ function initializeApp() {
     // Initialize fixed assignment manager as required by Prompt 7
     // eslint-disable-next-line no-undef
     fixedAssignmentManager = new FixedAssignmentManager();
+    console.log('DEBUGGING: fixedAssignmentManager initialized:', Boolean(fixedAssignmentManager));
+    console.log('DEBUGGING: fixedAssignmentManager type:', typeof fixedAssignmentManager);
     
     // Initialize adjacency constraint manager as required by Prompt 10
     // eslint-disable-next-line no-undef
     adjacencyConstraintManager = new AdjacencyConstraintManager();
+    console.log('DEBUGGING: adjacencyConstraintManager initialized:', Boolean(adjacencyConstraintManager));
+    
+    // Add global debug function for troubleshooting
+    window.debugAssignments = function() {
+        console.log('=== ASSIGNMENT DEBUG INFO ===');
+        console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+        if (fixedAssignmentManager) {
+            const assignments = fixedAssignmentManager.getAllAssignments();
+            console.log('Current assignments:', assignments);
+            console.log('Assignment count:', fixedAssignmentManager.getAssignmentCount());
+            console.log('Assignment keys:', Object.keys(assignments));
+            console.log('Assignment values:', Object.values(assignments));
+            console.log('Manager internal state:');
+            console.log('- Internal assignments:', fixedAssignmentManager.assignments);
+            console.log('- Internal guestToSeat:', fixedAssignmentManager.guestToSeat);
+        }
+        console.log('currentGuestList:', currentGuestList);
+        console.log('currentAssignedGuests:', currentAssignedGuests);
+        
+        // Also check the visual state
+        if (currentSeatElements) {
+            console.log('Visual seat states:');
+            Object.entries(currentSeatElements).forEach(([seatId, element]) => {
+                const hasFixed = element.classList.contains('fixed-assignment');
+                const hasGenerated = element.classList.contains('generated-assignment');
+                const textContent = element.textContent || '';
+                if (hasFixed || hasGenerated || textContent.trim()) {
+                    console.log(`- Seat ${seatId}: fixed=${hasFixed}, generated=${hasGenerated}, text="${textContent.trim()}"`);
+                }
+            });
+        }
+        console.log('==============================');
+        return {
+            managerExists: Boolean(fixedAssignmentManager),
+            assignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+            assignmentCount: fixedAssignmentManager ? fixedAssignmentManager.getAssignmentCount() : 0,
+            guestList: currentGuestList,
+            assignedGuests: currentAssignedGuests
+        };
+    };
+    console.log('💡 Debug tip: Type debugAssignments() in console to check assignment state');
     
     // Test models with sample data as required by Prompt 2
     testModels();
@@ -293,16 +374,22 @@ function handleGuestListChange() {
         currentGuestList = guestResult.guests;
         console.log('Updated guest list:', currentGuestList);
         
-        // Clear any existing assignments when guest list changes
-        currentAssignedGuests = [];
-        fixedAssignmentManager.clearAllAssignments();
-        
-        // Clear any seat displays
-        if (currentSeatElements) {
-            Object.values(currentSeatElements).forEach(seatElement => {
-                // eslint-disable-next-line no-undef
-                updateSeatDisplay(seatElement, null, false);
-            });
+        // Only clear assignments and seats if not importing
+        if (!isImporting) {
+            console.log('Clearing assignments because guest list changed (not during import)');
+            // Clear any existing assignments when guest list changes
+            currentAssignedGuests = [];
+            fixedAssignmentManager.clearAllAssignments();
+            
+            // Clear any seat displays
+            if (currentSeatElements) {
+                Object.values(currentSeatElements).forEach(seatElement => {
+                    // eslint-disable-next-line no-undef
+                    updateSeatDisplay(seatElement, null, false);
+                });
+            }
+        } else {
+            console.log('Skipping assignment clearing because we are importing');
         }
         
         // Update draggable guest list
@@ -539,9 +626,17 @@ function setupDragDropEventHandlers() {
 }
 
 function handleSeatDrop(guestName, seatId) {
+    // DEBUGGING: Log assignment attempt
+    console.log('=== SEAT ASSIGNMENT DEBUG ===');
+    console.log('Attempting to assign guest:', guestName, 'to seat:', seatId);
+    console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+    console.log('Current guest list:', currentGuestList);
+    console.log('Current assigned guests:', currentAssignedGuests);
+    
     // Validate the assignment using the validation function
     // eslint-disable-next-line no-undef
     const validation = validateFixedAssignment(guestName, seatId, currentGuestList, fixedAssignmentManager);
+    console.log('Validation result:', validation);
     
     if (!validation.isValid) {
         console.error('Assignment validation failed:', validation.error);
@@ -549,8 +644,16 @@ function handleSeatDrop(guestName, seatId) {
         return;
     }
     
+    // DEBUGGING: Log manager state before assignment
+    if (fixedAssignmentManager) {
+        console.log('Manager state before assignment:');
+        console.log('- Current assignments:', fixedAssignmentManager.getAllAssignments());
+        console.log('- Assignment count:', fixedAssignmentManager.getAssignmentCount());
+    }
+    
     // Attempt to add assignment to manager
     const result = fixedAssignmentManager.addAssignment(guestName, seatId);
+    console.log('addAssignment result:', result);
     
     if (!result.success) {
         console.error('Failed to add assignment:', result.error);
@@ -558,7 +661,12 @@ function handleSeatDrop(guestName, seatId) {
         return;
     }
     
+    // DEBUGGING: Log manager state after assignment
+    console.log('Manager state after assignment:');
+    console.log('- Current assignments:', fixedAssignmentManager.getAllAssignments());
+    console.log('- Assignment count:', fixedAssignmentManager.getAssignmentCount());
     console.log('Successfully assigned guest', guestName, 'to seat', seatId);
+    console.log('============================');
     
     // Update assigned guests list for drag and drop filtering
     currentAssignedGuests = Object.values(fixedAssignmentManager.getAllAssignments());
@@ -1495,6 +1603,51 @@ function updateGenerateButtonState(isValid) {
     }
 }
 
+// Helper function to wait for SVG rendering completion
+function waitForSVGRenderComplete() {
+    return new Promise(resolve => {
+        const checkRender = () => {
+            if (currentSeatElements && Object.keys(currentSeatElements).length > 0) {
+                console.log('SVG render complete - currentSeatElements populated with', Object.keys(currentSeatElements).length, 'seats');
+                resolve();
+            } else {
+                console.log('Waiting for SVG render completion...');
+                setTimeout(checkRender, 10);
+            }
+        };
+        checkRender();
+    });
+}
+
+// Helper function to apply fixed assignment visuals
+async function applyFixedAssignmentVisuals(fixedAssignments) {
+    console.log('Applying fixed assignment visuals...');
+    console.log('currentSeatElements available:', Boolean(currentSeatElements));
+    if (currentSeatElements) {
+        console.log('Available seat IDs:', Object.keys(currentSeatElements));
+    }
+    
+    Object.entries(fixedAssignments).forEach(([seatId, guestName]) => {
+        console.log(`Processing seat ${seatId}:`, {
+            seatId: seatId,
+            guestName: guestName,
+            guestNameType: typeof guestName,
+            guestNameValue: JSON.stringify(guestName)
+        });
+        
+        if (currentSeatElements && currentSeatElements[seatId]) {
+            console.log(`Found seat element for seat ${seatId}, calling updateSeatDisplay with:`, {
+                seatElement: currentSeatElements[seatId],
+                guestName: guestName,
+                isFixed: true
+            });
+            updateSeatDisplay(currentSeatElements[seatId], guestName, true);
+        } else {
+            console.warn(`No seat element found for seat ${seatId}`);
+        }
+    });
+}
+
 // Clear All functionality
 function handleClearAll() {
     console.log('Clear All button clicked');
@@ -1590,15 +1743,68 @@ function handleExportConfig() {
     console.log('Export Config button clicked');
     
     try {
+        // DEBUGGING: Log manager state before export
+        console.log('=== EXPORT DEBUG INFORMATION ===');
+        console.log('fixedAssignmentManager exists:', Boolean(fixedAssignmentManager));
+        console.log('fixedAssignmentManager type:', typeof fixedAssignmentManager);
+        
+        if (fixedAssignmentManager) {
+            const assignments = fixedAssignmentManager.getAllAssignments();
+            console.log('getAllAssignments() result:', assignments);
+            console.log('Assignment count:', fixedAssignmentManager.getAssignmentCount());
+            console.log('Assignment object keys:', Object.keys(assignments));
+            console.log('Assignment object values:', Object.values(assignments));
+            
+            // Log internal state for debugging
+            console.log('Manager internal assignments:', fixedAssignmentManager.assignments);
+            console.log('Manager internal guestToSeat:', fixedAssignmentManager.guestToSeat);
+        } else {
+            console.error('fixedAssignmentManager is null or undefined at export time!');
+        }
+        
+        console.log('adjacencyConstraintManager exists:', Boolean(adjacencyConstraintManager));
+        if (adjacencyConstraintManager) {
+            console.log('Adjacency constraints count:', adjacencyConstraintManager.getAllConstraints().length);
+        }
+        console.log('================================');
+        
         // Gather current configuration
+        const allAssignments = getAllCurrentAssignments();
         const config = {
             version: '1.0',
             timestamp: new Date().toISOString(),
             tableConfig: currentTableConfig,
             guestList: [...currentGuestList],
-            fixedAssignments: fixedAssignmentManager ? fixedAssignmentManager.getAllAssignments() : {},
+            fixedAssignments: allAssignments,
             adjacencyConstraints: adjacencyConstraintManager ? adjacencyConstraintManager.getAllConstraints() : []
         };
+        
+        // DEBUGGING: Log what we're about to export
+        console.log('Configuration being exported:');
+        console.log('- Table config:', config.tableConfig);
+        console.log('- Guest list length:', config.guestList.length);
+        console.log('- Fixed assignments:', config.fixedAssignments);
+        console.log('- Adjacency constraints length:', config.adjacencyConstraints.length);
+        
+        // Add user warning if no assignments are being exported
+        if (Object.keys(config.fixedAssignments).length === 0) {
+            console.warn('⚠️  WARNING: No seat assignments found for export!');
+            console.warn('This means either:');
+            console.warn('1. No guests have been assigned to seats via drag & drop or Generate Seating');
+            console.warn('2. Assignments were created but lost due to guest list changes');
+            console.warn('3. There is a bug in the assignment creation workflow');
+            
+            // Show user-friendly warning
+            const statusMessages = document.getElementById('status-messages');
+            if (errorDisplay) {
+                errorDisplay.showWarning(
+                    'Export Warning: No seat assignments found. Make sure you have assigned guests to seats using drag & drop or Generate Seating before exporting.',
+                    statusMessages
+                );
+            }
+        } else {
+            console.log(`✅ Exporting ${Object.keys(config.fixedAssignments).length} seat assignments (fixed + generated)`);
+        }
         
         // Create downloadable file
         const dataStr = JSON.stringify(config, null, 2);
@@ -1639,8 +1845,12 @@ function handleImportConfig(event) {
     if (!file) return;
     
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
+            // Set import flag to prevent clearing of assignments during guest list update
+            isImporting = true;
+            console.log('Starting import - setting isImporting flag to true');
+            
             const config = JSON.parse(e.target.result);
             
             // Validate config structure
@@ -1682,48 +1892,65 @@ function handleImportConfig(event) {
                 console.log('Calling handleTableInputChange...');
                 handleTableInputChange();
                 console.log('Table rendering completed');
-                
-                // Apply fixed assignments AFTER table is rendered
-                if (config.fixedAssignments && fixedAssignmentManager) {
-                    // Clear existing assignments first
-                    const existingAssignments = fixedAssignmentManager.getAllAssignments();
-                    Object.keys(existingAssignments).forEach(seatId => {
-                        handleRemoveAssignment(seatId);
-                    });
-                    
-                    // Add imported assignments to data structures
-                    Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                        fixedAssignmentManager.addAssignment(guestName, seatId);
-                    });
-                    
-                    // Update visuals after a short delay to ensure table is rendered
-                    setTimeout(() => {
-                        console.log('Updating seat visuals for fixed assignments...');
-                        console.log('currentSeatElements available:', Boolean(currentSeatElements));
-                        if (currentSeatElements) {
-                            console.log('Available seat IDs:', Object.keys(currentSeatElements));
-                        }
-                        
-                        Object.entries(config.fixedAssignments).forEach(([seatId, guestName]) => {
-                            console.log(`Trying to update seat ${seatId} with guest ${guestName}`);
-                            if (currentSeatElements && currentSeatElements[seatId]) {
-                                console.log(`Found seat element for seat ${seatId}, updating display`);
-                                updateSeatDisplay(currentSeatElements[seatId], guestName, true);
-                            } else {
-                                console.warn(`No seat element found for seat ${seatId}`);
-                            }
-                        });
-                    }, 100);
-                }
             }
             
-            // Apply guest list
+            // Apply guest list FIRST - fixed assignments may depend on guest list
             if (config.guestList) {
+                console.log('Importing guest list...');
                 const guestListInput = document.getElementById('guest-list-input');
                 if (guestListInput) {
                     guestListInput.value = config.guestList.join('\n');
                     guestListInput.dispatchEvent(new Event('input'));
                 }
+            }
+            
+            // Apply fixed assignments AFTER guest list and table are ready
+            if (config.fixedAssignments !== undefined && fixedAssignmentManager && config.tableConfig) {
+                console.log('Processing fixed assignments import...');
+                console.log('Fixed assignments to import:', config.fixedAssignments);
+                
+                const assignmentEntries = Object.entries(config.fixedAssignments);
+                console.log(`Found ${assignmentEntries.length} fixed assignments to import`);
+                
+                // Clear existing assignments first
+                const existingAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Clearing existing assignments:', existingAssignments);
+                Object.keys(existingAssignments).forEach(seatId => {
+                    handleRemoveAssignment(seatId);
+                });
+                
+                // Add imported assignments to data structures (if any)
+                if (assignmentEntries.length > 0) {
+                    assignmentEntries.forEach(([seatId, guestName]) => {
+                        console.log(`Adding assignment: seat ${seatId} -> guest ${guestName}`);
+                        fixedAssignmentManager.addAssignment(guestName, seatId);
+                    });
+                } else {
+                    console.log('No fixed assignments to import (empty object)');
+                }
+                
+                // Verify assignments were added correctly
+                const verifyAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Assignments after import:', verifyAssignments);
+                
+                // Wait for SVG rendering to complete before applying visual updates
+                console.log('Waiting for SVG rendering completion before applying visuals...');
+                await waitForSVGRenderComplete();
+                
+                // Apply visual updates now that SVG is ready - use manager data to ensure consistency
+                const currentAssignments = fixedAssignmentManager.getAllAssignments();
+                console.log('Current assignments from manager for visual update:', currentAssignments);
+                if (Object.keys(currentAssignments).length > 0) {
+                    await applyFixedAssignmentVisuals(currentAssignments);
+                } else {
+                    console.log('No assignments to apply visually');
+                }
+            } else {
+                console.log('Skipping fixed assignments import - missing requirements:', {
+                    hasFixedAssignments: config.fixedAssignments !== undefined,
+                    hasFixedAssignmentManager: Boolean(fixedAssignmentManager),
+                    hasTableConfig: Boolean(config.tableConfig)
+                });
             }
             
             // Apply adjacency constraints
@@ -1741,13 +1968,17 @@ function handleImportConfig(event) {
                 
                 // Update constraints UI
                 // eslint-disable-next-line no-undef
-                renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list'));
+                renderConstraintsList(adjacencyConstraintManager.getAllConstraints(), document.getElementById('constraints-list-container'));
             }
             
             // Show success message
+            console.log('Import completed successfully!');
             const statusMessages = document.getElementById('status-messages');
             if (errorDisplay) {
                 errorDisplay.showSuccess('Configuration imported successfully', statusMessages);
+                console.log('Success message displayed');
+            } else {
+                console.warn('errorDisplay not available for success message');
             }
             
         } catch (error) {
@@ -1756,6 +1987,10 @@ function handleImportConfig(event) {
             if (errorDisplay) {
                 errorDisplay.showError('Import failed: ' + error.message, statusMessages);
             }
+        } finally {
+            // Always clear the import flag
+            isImporting = false;
+            console.log('Import completed - setting isImporting flag to false');
         }
     };
     

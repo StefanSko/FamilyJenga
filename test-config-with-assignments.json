@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "timestamp": "2025-06-27T14:09:53.936Z",
+  "tableConfig": {
+    "topSeats": 2,
+    "rightSeats": 2,
+    "bottomSeats": 2,
+    "leftSeats": 2,
+    "totalSeats": 8
+  },
+  "guestList": [
+    "Alice",
+    "Bob",
+    "Charlie",
+    "Diana",
+    "Eve",
+    "Frank"
+  ],
+  "fixedAssignments": {
+    "1": "Alice",
+    "3": "Bob",
+    "5": "Charlie"
+  },
+  "adjacencyConstraints": []
+}
